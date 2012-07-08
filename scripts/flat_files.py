@@ -4,8 +4,8 @@ from cogent.parse.genbank import MinimalGenbankParser, PartialRecordError
 from cogent.util.misc import parse_command_line_parameters
 from optparse import make_option
 from greengenes.flat_files import get_sequence, get_genbank_summary, \
-        get_accession, get_gb_summary_header
-from greengenes.write import write_sequence, write_gb_summary, \
+        get_accession
+from greengenes.write import write_sequence, write_gg_record, \
         write_obs_record
 from greengenes.parse import parse_existing_records
 from greengenes.util import greengenes_open as open, NoSequenceError, \

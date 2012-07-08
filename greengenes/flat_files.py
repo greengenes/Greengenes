@@ -125,7 +125,7 @@ def get_journal(r):
         return None
 
     res = r['references'][0].get('journal', None)
-    if res.lower() == 'unpublished':
+    if res is not None and res.lower() == 'unpublished':
         return None
     else:
         return res
