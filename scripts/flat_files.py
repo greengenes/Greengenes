@@ -56,16 +56,12 @@ def main():
     observed_records = parse_existing_records(open(existing_fp))
 
     sequences_fp = os.path.join(output_dir, '%s_sequences.fasta.gz' % tag)
-    gb_summaries_fp = os.path.join(output_dir, '%s_gbsummaries.txt.gz' % tag)
+    gg_records_fp = os.path.join(output_dir, '%s_ggrecords.txt.gz' % tag)
     obs_records_fp = os.path.join(output_dir, '%s_obsrecords.txt.gz' % tag)
     
     sequences = open(sequences_fp,'w')
-    gb_summaries = open(gb_summaries_fp, 'w')
+    gg_records = open(gg_records_fp, 'w')
     obs_records = open(obs_records_fp, 'w')
-
-    header = get_gb_summary_header()
-    header[0] = "#%s" % header[0] # add a hash
-    write_gb_summary(gb_summaries, header[0], header[1:]) # first val as id
 
     for gb_fp in input_gbs:
         logline = log_f("Start parsing of %s..." % gb_fp)
@@ -112,16 +108,15 @@ def main():
                 failure_count += 1
                 continue
 
-            # gb_summary is a list of str values in order defiend by 
-            # get_genbank_summary
+            # gg_record contains gb summary data  
             try:
-                gb_summary = get_genbank_summary(next_record)
+                gg_record = get_genbank_summary(next_record)
             except KeyError, e:
                 failure_count += 1
                 continue
 
             write_sequence(sequences, accession, sequence)
-            write_gb_summary(gb_summaries, accession, gb_summary[1:])
+            write_gg_record(gg_records, gg_record)
             write_obs_record(obs_records, accession)
             
         if failure_count >= max_failures:
@@ -138,7 +133,7 @@ def main():
                 stdout.write(logline)
 
     sequences.close()
-    gb_summaries.close()
+    gg_records.close()
     obs_records.close()
 
 if __name__ == '__main__':

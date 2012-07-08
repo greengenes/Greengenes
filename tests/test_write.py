@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 from cogent.util.unit_test import TestCase,main
-from greengenes.write import write_sequence, write_gb_summary, \
-    write_obs_record
+from greengenes.write import write_sequence,  \
+    write_obs_record, write_gg_record
+from greengenes.util import GreengenesRecord
 from StringIO import StringIO
 
 __author__ = "Daniel McDonald"
@@ -28,16 +29,16 @@ class WriteTests(TestCase):
         obs = f.read()
         self.assertEqual(obs,exp)
 
-    def test_write_gb_summary(self):
-        """writes a gb summary line"""
-        f = StringIO()
-        # its just an honest method...
-        exp = "a\tb\tc\tg\nx\ty\tz\tfoo\n"
-        write_gb_summary(f, 'a', ['b','c','g'])
-        write_gb_summary(f, 'x', ['y','z','foo'])
-        f.seek(0)
-        obs = f.read()
-        self.assertEqual(obs, exp)
+    #def test_write_gb_summary(self):
+    #    """writes a gb summary line"""
+    #    f = StringIO()
+    #    # its just an honest method...
+    #    exp = "a\tb\tc\tg\nx\ty\tz\tfoo\n"
+    #    write_gb_summary(f, 'a', ['b','c','g'])
+    #    write_gb_summary(f, 'x', ['y','z','foo'])
+    #    f.seek(0)
+    #    obs = f.read()
+    #    self.assertEqual(obs, exp)
 
     def test_write_obs_record(self):
         """writes observed records"""
@@ -49,6 +50,53 @@ class WriteTests(TestCase):
         f.seek(0)
         obs = f.read()
         self.assertEqual(obs,exp)
+
+    def test_write_gg_record(self):
+        """Writes a gg record"""
+        exp = sorted(['BEGIN',
+            'prokMSA_id=123',
+            'ncbi_acc_w_ver=xyz',
+            'ncbi_gi=333',
+            'db_name=',
+            'gold_id=',
+            'decision=',
+            'prokMSAname=',
+            'isolation_source=',
+            'clone=foo',
+            'organism=',
+            'strain=',
+            'specific_host=',
+            'authors=',
+            'title=',
+            'pubmed=123',
+            'journal=',
+            'study_id=',
+            'submit_date=',
+            'country=',
+            'ncbi_tax_string=',
+            'Silva_tax_string=',
+            'RDP_tax_string=',
+            'greengenes_tax_string=',
+            'non_ACGT_percent=0.5',
+            'perc_ident_to_invariant_core=',
+            'small_gap_intrusions=',
+            'bellerophon=',
+            'bel3_div_ratio=',
+            'chim_slyr_a=',
+            'chim_slyr_b=',
+            'chim_slyr_a_tax=',
+            'chim_slyr_b_tax=',
+            'aligned_seq=',
+            'unaligned_seq=',
+            'END',''])
+        ggrec = GreengenesRecord({'prokMSA_id':123,'ncbi_acc_w_ver':'xyz',
+                                'ncbi_gi':'333','pubmed':123,'clone':'foo',
+                                  'non_ACGT_percent':'0.5'})
+        f = StringIO()
+        write_gg_record(f, ggrec)
+        f.seek(0)
+        obs = sorted(f.read().splitlines())
+        self.assertEqual(obs, exp)
 
 if __name__ == '__main__':
     main()

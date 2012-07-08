@@ -6,9 +6,10 @@ from greengenes.flat_files import get_accession, get_gi, get_sequence, \
         get_decision, get_isolation_source, get_organism, get_taxon, \
         get_country, get_ncbi_taxonomy, get_gold_id, _parse_migs_poorly, \
         get_title, get_journal, get_authors, get_pubmed, get_taxon, \
-        get_ncbi_taxonomy, get_country, get_genbank_summary, get_strain, \
-        get_gb_summary_header, field_order
+        get_ncbi_taxonomy, get_country, get_genbank_summary, get_strain
+        #get_gb_summary_header, field_order
 from StringIO import StringIO
+from greengenes.util import GreengenesRecord
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
@@ -92,7 +93,7 @@ class FlatFilesTests(TestCase):
         """Parse MIGS data... assuming its store the same way in GB recs"""
         f = lambda x: x.strip().split()[0]
         exp_it = "bacteria_archaea"
-        exp_missing = ""
+        exp_missing = None
         obs_it = _parse_migs_poorly(self.gb1['comment'], "investigation_type", f)
         obs_missing = _parse_migs_poorly(self.gb1['comment'],"w00p not here")
         self.assertEqual(obs_it, exp_it)
@@ -106,7 +107,7 @@ class FlatFilesTests(TestCase):
 
     def test_get_pubmed(self):
         """Gets pubmed if available"""
-        exp = ""
+        exp = None
         obs = get_pubmed(self.gb1)
         self.assertEqual(obs,exp)
 
@@ -122,25 +123,29 @@ class FlatFilesTests(TestCase):
 
     def test_get_genbank_summary(self):
         """Get the summary!!"""
-        exp = ['AGIY01000001.1',
-               '354825968',
-               'NOT SURE YET',
-               'Gi05850',
-               'NOT SURE YET',
-               'anaerobic digested sludge',
-               'NOT SURE YET',
-               'Methanolinea tarda NOBI-1',
-               'NOBI-1',
-               'NOT SURE YET',
-               'Lucas,S., Han,J., Lapidus,A., Cheng,J.-F., Goodwin,L., Pitluck,S., Peters,L., Land,M.L., Hauser,L., Imachi,H., Sekiguchi,Y., Kamagata,Y., Cadillo-Quiroz,H., Zinder,S., Liu,W.T., Tamaki,H. and Woyke,T.J.',
-               'The draft genome of Methanolinea tarda NOBI-1',
-               '',
-               '',
-               'NOT SURE YET',
-               'Japan: Nagaoka',
-               '882090',
-               'Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Genera incertae sedis; Methanolinea']
+        exp = GreengenesRecord({'ncbi_acc_w_ver':'AGIY01000001.1',
+                'ncbi_gi':'354825968',
+                'db_name':'NOT SURE YET',
+                'gold_id':'Gi05850',
+                'decision':'NOT SURE YET',
+                'isolation_source':'anaerobic digested sludge',
+                'clone':'NOT SURE YET',
+                'organism':'Methanolinea tarda NOBI-1',
+                'strain':'NOBI-1',
+                'specific_host':'NOT SURE YET',
+               'authors':'Lucas,S., Han,J., Lapidus,A., Cheng,J.-F., Goodwin,L., Pitluck,S., Peters,L., Land,M.L., Hauser,L., Imachi,H., Sekiguchi,Y., Kamagata,Y., Cadillo-Quiroz,H., Zinder,S., Liu,W.T., Tamaki,H. and Woyke,T.J.',
+               'title':'The draft genome of Methanolinea tarda NOBI-1',
+               'submit_date':'NOT SURE YET',
+               'country':'Japan: Nagaoka',
+               #'NCBI_tax_id':'882090',
+               'ncbi_tax_string':'Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Genera incertae sedis; Methanolinea'})
         obs = get_genbank_summary(self.gb1)
+        
+        for k in obs:
+            if obs[k] != exp[k]:
+                print k
+                print obs[k]
+                print exp[k]
         self.assertEqual(obs,exp)
 
     def test_get_authors(self):
@@ -151,7 +156,7 @@ class FlatFilesTests(TestCase):
 
     def test_get_journal(self):
         """Get the journal"""
-        exp = ""
+        exp = None
         obs = get_journal(self.gb1)
         self.assertEqual(obs,exp)
 
@@ -181,12 +186,6 @@ class FlatFilesTests(TestCase):
         exp = "Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Genera incertae sedis; Methanolinea"
         obs = get_ncbi_taxonomy(self.gb1)
         self.assertEqual(obs,exp)
-
-    def test_get_gb_summary_header(self):
-        """Get the gb summary header"""
-        exp = field_order
-        obs = get_gb_summary_header()
-        self.assertEqual(obs, exp)
 
 id_AGIY01000001_1_gb = open('test_data/AGIY01000001.1.gb').read()
 id_FO117587_1_gb = open('test_data/FO117587.1.gb').read()
