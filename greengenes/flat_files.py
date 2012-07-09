@@ -171,7 +171,7 @@ def get_prokMSAname(r):
         isolation_source = get_isolation_source(r)
         clone = get_clone(r)
         
-        return "[%s] clone [%s]" % (str(isolation_source, str(clone)))
+        return "[%s] clone [%s]" % (str(isolation_source), str(clone))
     else:
         organism = get_organism(r)
 
@@ -180,7 +180,6 @@ def get_prokMSAname(r):
         else:
             return None
 
-        return get_isolation_source(r)
 parse_funs = [('ncbi_acc_w_ver', get_accession),
               ('ncbi_gi', get_gi),
               ('db_name', get_dbname),
