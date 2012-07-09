@@ -1,17 +1,59 @@
+LOCUS       X59457         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml
+11/DTD/xhtml11.dtd"> 
 <html>
-asd
-asd
-asd
-ads
-asda
-ds
+<head>
+<title>NCBI/eutils111 - WWW Error 500 Diagnostic</title>
+<style type="text/css"> 
+h1.error {color: red; font-size: 40pt}
+div.diags {text-indent: 0.5in }
+</style> 
+</head>
+<body>
+<h1>Server Error</h1>
+
+
+<p>Your request could not be processed due to a problem on
+our Web server.  This could be a transient problem, please
+try the query again.  If it doesn't clear up within a
+reasonable period of time, e-mail a short description of your
+query and the diagnostic information shown below to:</p>
+
+<p>
+pubmed@nlm.nih.gov - for problems with PubMed<br/>
+webadmin@ncbi.nlm.nih.gov - for problems with other services<br/>
+</p>
+
+<p>Thank you for your assistance.  We will try to fix the
+problem as soon as possible.
+</p>
+<hr/>
+<p>
+Diagnostic Information:</p>
+
+<div class="diags">Error: 500</div>
+
+
+<div class="diags">URL:  h t t p : / / w w w . n c b i . n l m . n i h . g o v / e n t r e z / e u t i l
+ s / e f e t c h . f c g i ? q u e r y _ k e y = 1 & a m p ; W e b E n v = N C I D _ 1 _ 3 0 5 5 7 2 2 4
+ _ 1 3 0 . 1 4 . 2 2 . 7 6 _ 5 5 5 5 _ 1 3 4 0 8 6 0 6 5 3 _ 1 2 1 7 1 8 0 6 2 9 & a m p ; t o o l = P y
+ C o g e n t & a m p ; d b = n u c l e o t i d e & a m p ; r e t t y p e = g b & a m p ; r e t s t a r t
+ = 1 0 0 & a m p ; r e t m a x = 1 0 0 & a m p ; r e t m o d e = t e x t & a m p ; e m a i l = M i c h a
+ e l . R o b e s o n  4 0 c o l o r a d o . e d u </div>
+
+<div class="diags">Client: 130.14.26.13</div>
+
+<div class="diags">Server: eutils111</div>
+
+<div class="diags">Time: Thu Jun 28 01:18:36 EDT 2012</div>
+
+ 
+<p>
+NOTE: The above is an internal URL which may differ from the one you used to address the page.</p>
+<hr/>
+<p>Rev. 01/04/08</p>
+
+</body>
 </html>
-
-asd
-
-ad
-
-
 LOCUS       AGIY01000001          452612 bp    DNA     linear   BCT 31-OCT-2011
 DEFINITION  Methanolinea tarda NOBI-1 ctg73, whole genome shotgun sequence.
 ACCESSION   AGIY01000001 AGIY01000000

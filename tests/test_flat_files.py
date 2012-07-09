@@ -6,8 +6,8 @@ from greengenes.flat_files import get_accession, get_gi, get_sequence, \
         get_decision, get_isolation_source, get_organism, get_taxon, \
         get_country, get_ncbi_taxonomy, get_gold_id, _parse_migs_poorly, \
         get_title, get_journal, get_authors, get_pubmed, get_taxon, \
-        get_ncbi_taxonomy, get_country, get_genbank_summary, get_strain
-        #get_gb_summary_header, field_order
+        get_ncbi_taxonomy, get_country, get_genbank_summary, get_strain, \
+        get_submit_date, get_specific_host
 from StringIO import StringIO
 from greengenes.util import GreengenesRecord
 
@@ -65,7 +65,13 @@ class FlatFilesTests(TestCase):
 
     def test_get_decision(self):
         """get the decision"""
-        self.fail("not sure yet how to get this")
+        exp_gb1 = 'named_isolate'
+        obs_gb1 = get_decision(self.gb1)
+        self.assertEqual(obs_gb1, exp_gb1)
+
+        exp_gb2 = 'clone'
+        obs_gb2 = get_decision(self.gb2)
+        self.assertEqual(obs_gb2, exp_gb2)
 
     def test_get_isolation_source(self):
         """Try to get the isolation source"""
@@ -121,31 +127,37 @@ class FlatFilesTests(TestCase):
         obs = get_strain(self.gb1)
         self.assertEqual(obs,exp)
 
+    def test_get_specific_host(self):
+        """gets the specific host"""
+        exp = "Uncultured Flavobacteriia bacterium." 
+        obs = get_specific_host(self.gb2)
+        self.assertEqual(obs, exp)
+
+    def test_get_submit_date(self):
+        """Gets the submission date"""
+        exp = "13-MAR-2012"
+        obs = get_submit_date(self.gb2)
+        self.assertEqual(obs,exp)
+
     def test_get_genbank_summary(self):
         """Get the summary!!"""
         exp = GreengenesRecord({'ncbi_acc_w_ver':'AGIY01000001.1',
                 'ncbi_gi':'354825968',
-                'db_name':'NOT SURE YET',
                 'gold_id':'Gi05850',
-                'decision':'NOT SURE YET',
+                'decision':'named_isolate',
                 'isolation_source':'anaerobic digested sludge',
-                'clone':'NOT SURE YET',
                 'organism':'Methanolinea tarda NOBI-1',
                 'strain':'NOBI-1',
-                'specific_host':'NOT SURE YET',
+                'prokMSAname':'[Methanolinea tarda NOBI-1]',
+                'specific_host':'Methanolinea tarda NOBI-1 ctg73, whole genome shotgun sequence.',
                'authors':'Lucas,S., Han,J., Lapidus,A., Cheng,J.-F., Goodwin,L., Pitluck,S., Peters,L., Land,M.L., Hauser,L., Imachi,H., Sekiguchi,Y., Kamagata,Y., Cadillo-Quiroz,H., Zinder,S., Liu,W.T., Tamaki,H. and Woyke,T.J.',
                'title':'The draft genome of Methanolinea tarda NOBI-1',
-               'submit_date':'NOT SURE YET',
+               'submit_date':'31-OCT-2011',
                'country':'Japan: Nagaoka',
                #'NCBI_tax_id':'882090',
                'ncbi_tax_string':'Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Genera incertae sedis; Methanolinea'})
         obs = get_genbank_summary(self.gb1)
-        
-        for k in obs:
-            if obs[k] != exp[k]:
-                print k
-                print obs[k]
-                print exp[k]
+       
         self.assertEqual(obs,exp)
 
     def test_get_authors(self):

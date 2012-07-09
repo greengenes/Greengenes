@@ -2,6 +2,7 @@
 
 from greengenes.write import write_sequence
 from greengenes.util import NoSequenceError, GreengenesRecord
+import string
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
@@ -28,9 +29,15 @@ def get_gi(r):
     """Get the GI"""
     return r['version'].split(':')[-1]
 
+clone_names = set(['uncultured','unclassified','unknown.','unidentified',\
+                   'unknown'])
 def get_decision(r):
-    # maybe r['definition'
-    return "NOT SURE YET"
+    """determine clone or isolate"""
+    fields = map(string.lower, r['source'].split())
+    for n in clone_names:
+        if n in fields:
+            return 'clone'
+    return 'named_isolate'
 
 def get_organism(r):
     """Get the organism"""
@@ -43,7 +50,10 @@ def get_taxon(r):
     """get the ncbi taxon id"""
     res = r['features'][0].get('db_xref',None)
     if res and res[0]:
-        res = res[0].split(':')[1]
+        if res[0].startswith('taxon'):
+            res = res[0].split(':')[1]
+        else:
+            return None
     return res
 
 def get_country(r):
@@ -87,10 +97,11 @@ def get_isolation_source(r):
     return res
 
 def get_dbname(r):
-    return "NOT SURE YET"
+    return None
 
 def get_clone(r):
-    return "NOT SURE YET"
+    """Try to determine if clone ID"""
+    return r['features'][0].get('clone', None)
 
 def get_strain(r):
     """Get the strain"""
@@ -100,7 +111,9 @@ def get_strain(r):
     return res
 
 def get_specific_host(r):
-    return "NOT SURE YET"
+    """Specific host name"""
+    # strip off DEFINITION
+    return r['definition'].split(" ",1)[1].strip()
 
 def get_title(r):
     """Get pub title"""
@@ -138,7 +151,7 @@ def get_pubmed(r):
     return r['references'][0].get('pubmed',None)
 
 def get_submit_date(r):
-    return "NOT SURE YET"
+    return r['date']
 
 def get_ncbi_taxonomy(r):
     return '; '.join(r['taxonomy'])
@@ -151,11 +164,23 @@ def get_genbank_summary(r):
         rec[f] = m(r)
 
     return rec
-#    return [f(r) for field, f in parse_funs]
 
-#def get_gb_summary_header():
-#    return field_order
+def get_prokMSAname(r):
+    """form the prokMSAname"""
+    if get_decision(r) == 'clone':
+        isolation_source = get_isolation_source(r)
+        clone = get_clone(r)
+        
+        return "[%s] clone [%s]" % (str(isolation_source, str(clone)))
+    else:
+        organism = get_organism(r)
 
+        if organism is not None:
+            return "[%s]" % get_organism(r)
+        else:
+            return None
+
+        return get_isolation_source(r)
 parse_funs = [('ncbi_acc_w_ver', get_accession),
               ('ncbi_gi', get_gi),
               ('db_name', get_dbname),
@@ -173,6 +198,7 @@ parse_funs = [('ncbi_acc_w_ver', get_accession),
               ('submit_date', get_submit_date),
               ('country', get_country),
               #('NCBI_tax_id', get_taxon),
+              ('prokMSAname', get_prokMSAname),
               ('ncbi_tax_string', get_ncbi_taxonomy)]
 
 # functions requiring information external 
