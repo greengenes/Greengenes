@@ -7,7 +7,7 @@ from greengenes.flat_files import get_accession, get_gi, get_sequence, \
         get_country, get_ncbi_taxonomy, get_gold_id, _parse_migs_poorly, \
         get_title, get_journal, get_authors, get_pubmed, get_taxon, \
         get_ncbi_taxonomy, get_country, get_genbank_summary, get_strain, \
-        get_submit_date, get_specific_host
+        get_submit_date, get_specific_host, get_prokMSAname, get_clone
 from StringIO import StringIO
 from greengenes.util import GreengenesRecord
 
@@ -25,6 +25,17 @@ class FlatFilesTests(TestCase):
         self.gb1 = MinimalGenbankParser(StringIO(id_AGIY01000001_1_gb)).next()
         self.gb2 = MinimalGenbankParser(StringIO(id_FO117587_1_gb)).next()
         self.multi = MinimalGenbankParser(StringIO(combined))
+
+    def test_get_clone(self):
+        """get clone or none"""
+        exp_gb1 = None
+        exp_gb2 = "testingclone"
+
+        obs_gb1 = get_clone(self.gb1)
+        obs_gb2 = get_clone(self.gb2)
+
+        self.assertEqual(obs_gb1, exp_gb1)
+        self.assertEqual(obs_gb2, exp_gb2)
 
     def test_get_accession(self):
         """Get an accession"""
@@ -159,6 +170,12 @@ class FlatFilesTests(TestCase):
         obs = get_genbank_summary(self.gb1)
        
         self.assertEqual(obs,exp)
+
+    def test_get_prokMSAname(self):
+        """get the prokmsa name"""
+        exp_gb1 = "[Methanolinea tarda NOBI-1]"
+        obs_gb1 = get_prokMSAname(self.gb1)
+        self.assertEqual(obs_gb1, exp_gb1)
 
     def test_get_authors(self):
         """Gets the authors"""

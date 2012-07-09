@@ -29,6 +29,7 @@ FEATURES             Location/Qualifiers
                      /db_xref="taxon:212695"
                      /environmental_sample
                      /country="Atlantic Ocean"
+                     /clone="testingclone"
                      /lat_lon="34.07 N 30 W"
                      /collection_date="30-Sep-2006"
      gene            268..1431

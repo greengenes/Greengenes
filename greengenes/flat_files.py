@@ -101,7 +101,11 @@ def get_dbname(r):
 
 def get_clone(r):
     """Try to determine if clone ID"""
-    return r['features'][0].get('clone', None)
+    res = r['features'][0].get('clone', None)
+    if res is not None:
+        return res[0]
+    else:
+        return None
 
 def get_strain(r):
     """Get the strain"""
