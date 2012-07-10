@@ -83,10 +83,9 @@ def main():
             except StopIteration:
                 break
             except Exception, e:
-                print e
-                print "previous accession: %s" % accession
-                raise e
-            
+                logline = log_f("Caught: %s, previous accession: %s" % (e, accession))
+                failure_count += 1
+
             # accession is str including version
             try:
                 accession = get_accession(next_record)
