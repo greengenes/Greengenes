@@ -129,9 +129,9 @@ class GreengenesRecord(dict):
                     'arb_rule':'full_name','required':False},
         'isolation_source':{'type':str, 
                     'desc':"Genbank source features, isolation_source",
-                    'arb_rule':'isolation_source','required':True},
+                    'arb_rule':'isolation_source','required':False},
         'clone':{'type':str, 'desc':"??????",'arb_rule':'clone',
-                    'required':True},
+                    'required':False},
         'organism':{'type':str, 'desc':"Genbank source features, organism",
                     'arb_rule':'organism','required':False},
         'strain':{'type':str, 'desc':"Genbank source features, strain",
@@ -170,7 +170,7 @@ class GreengenesRecord(dict):
                     'desc':"Percent not aligning to invariant bases",
                     'arb_rule':'percent_invariant_match','required':True},
         'small_gap_intrusions':{'type':float, 'desc':"????????????????",
-                    'arb_rule':'small_gap_intrusions','required':True},
+                    'arb_rule':'small_gap_intrusions','required':False},
         'bellerophon':{'type':str, 'desc':"Bellerophon determination",
                     'arb_rule':'bellerophon','required':False},
         'bel3_div_ratio':{'type':float, 'desc':"Bellerophon divergence ratio",
@@ -187,11 +187,18 @@ class GreengenesRecord(dict):
         'chim_slyr_b_tax':{'type':str, 
                     'desc':"Greengenes consensus of parent sequence",
                     'arb_rule':'chim_slyr_b_tax','required':False},
-        'aligned_seq':{'type':str, 'desc':"Full unaligned sequence",
+        'unaligned_seq':{'type':str, 'desc':"Full unaligned sequence",
                     'arb_rule':'aligned_seq','required':True},
-        'unaligned_seq':{'type':str, 
+        'aligned_seq':{'type':str, 
                     'desc':"SSU-Align'ed and masked sequence in NAST width",
-                    'arb_rule':'unaligned_seq','required':True}
+                    'arb_rule':'unaligned_seq','required':True},
+        # there are two lengths as ssu-mask drops positions
+        'n_pos_aligned':{'type':int,
+                    'desc':"The length of the sequence minus gaps",
+                    'arb_rule':'n_pos_aligned','required':True},
+        'n_pos_unaligned':{'type':int,
+                    'desc':"The length of the unaligned sequence",
+                    'arb_rule':'n_pos_unaligned','required':True}
         }
 
  

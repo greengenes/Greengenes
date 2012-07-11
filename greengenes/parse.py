@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from cogent.parse.fasta import MinimalFastaParser
 from greengenes.util import GreengenesRecord
 
 __author__ = "Daniel McDonald"
@@ -10,6 +11,20 @@ __version__ = "1.5.0-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
+
+def parse_invariants(lines):
+    """Parse the invariants
+
+    Returns [(invariant_id, invariant_map, invariant_length)]
+    """
+    invs = list(MinimalFastaParser(lines))
+    invs_lengths = [len(s) - s.count('N') for i,s in invs]
+
+    result = []
+    for (inv_id, inv_map),inv_len in zip(invs, invs_lengths):
+        result.append((inv_id, inv_map, inv_len))
+
+    return result
 
 def parse_existing_records(open_file):
     """Load a column of data"""

@@ -1,0 +1,89 @@
+LOCUS       EF250419                 114 bp    DNA     linear   ENV 13-MAR-2008
+DEFINITION  Uncultured bacterium clone Fl_012357_2168_2027 16S ribosomal RNA
+            gene, partial sequence.
+ACCESSION   EF250419
+VERSION     EF250419.1  GI:151626456
+DBLINK      Project: 18561
+KEYWORDS    ENV.
+SOURCE      uncultured b<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/
+TR/xhtml11/DTD/xhtml11.dtd"> 
+LOCUS       FJ924701                 135 bp    DNA     linear   ENV 31-AUG-2010
+DEFINITION  Uncultured eukaryote clone E88AHAQ01D6VJI 18S ribosomal RNA gene,
+            partial sequence.
+ACCESSION   FJ924701
+VERSION     FJ924701.1  GI:238237108
+DBLINK      Project: 36317
+KEYWORDS    ENV.
+SOURCE      uncultured eukaryote
+  ORGANISM  uncultured eukaryote
+            Eukaryota; environmental samples.
+REFERENCE   1  (bases 1 to 135)
+  AUTHORS   Chariton,A.A., Court,L.N., Hartley,D.M., Colloff,M.J. and
+            Hardy,C.M.
+  TITLE     Ecological assessment of estuarine sediments by pyrosequencing
+            eukaryotic ribosomal DNA
+  JOURNAL   Front Ecol Environ 8 (5), 233-238 (2010)
+REFERENCE   2  (bases 1 to 135)
+  AUTHORS   Chariton,A., Court,L.N., Hartley,D.M., Colloff,M.J. and Hardy,C.M.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (14-APR-2009) Entomology, Commonwealth Scientific
+            Industrial Research Organisation, Clunies Ross Street, Canberra,
+            ACT 2601, Australia
+FEATURES             Location/Qualifiers
+     source          1..135
+                     /organism="uncultured eukaryote"
+                     /mol_type="genomic DNA"
+                     /isolation_source="Sydney Harbor sediments"LOCUS       EF250419                 114 bp    DNA     linear   ENV 13-MAR-2008
+DEFINITION  Uncultured bacterium clone Fl_012357_2168_2027 16S ribosomal RNA
+            gene, partial sequence.
+ACCESSION   EF250419
+VERSION     EF250419.1  GI:151626456
+DBLINK      Project: 18561
+KEYWORDS    ENV.
+SOURCE      uncultured b
+//
+
+LOCUS       FJ924701                 135 bp    DNA     linear   ENV 31-AUG-2010
+DEFINITION  Uncultured eukaryote clone E88AHAQ01D6VJI 18S ribosomal RNA gene,
+            partial sequence.
+ACCESSION   FJ924701
+VERSION     FJ924701.1  GI:238237108
+DBLINK      Project: 36317
+KEYWORDS    ENV.
+SOURCE      uncultured eukaryote
+  ORGANISM  uncultured eukaryote
+            Eukaryota; environmental samples.
+REFERENCE   1  (bases 1 to 135)
+  AUTHORS   Chariton,A.A., Court,L.N., Hartley,D.M., Colloff,M.J. and
+            Hardy,C.M.
+  TITLE     Ecological assessment of estuarine sediments by pyrosequencing
+            eukaryotic ribosomal DNA
+  JOURNAL   Front Ecol Environ 8 (5), 233-238 (2010)
+REFERENCE   2  (bases 1 to 135)
+  AUTHORS   Chariton,A., Court,L.N., Hartley,D.M., Colloff,M.J. and Hardy,C.M.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (14-APR-2009) Entomology, Commonwealth Scientific
+            Industrial Research Organisation, Clunies Ross Street, Canberra,
+            ACT 2601, Australia
+FEATURES             Location/Qualifiers
+     source          1..135
+                     /organism="uncultured eukaryote"
+                     /mol_type="genomic DNA"
+                     /isolation_source="Sydney Harbor sediments"
+                     /db_xref="taxon:100272"
+                     /clone="E88AHAQ01D6VJI"
+                     /environmental_sample
+                     /country="Australia"
+                     /collection_date="2007"
+                     /note="number of identical sequence reads: 15
+                     number of independent samples: 5
+                     sequence present in sediments of Boronia Park, Iron Cove,
+                     Five Dock Bay
+                     similar to INSD accession AF047889.1 (Monhysterida)"
+     rRNA            <1..>135
+                     /product="18S ribosomal RNA"
+ORIGIN      
+        1 tggtggagcg atttgtctgg ttaattccga taacgaacga gactccaacc tactaactag
+       61 tgggcgaatc attccgttcg cgacacttct tagagggata ggtgacgttt agtcacatga
+      121 gaaggagcaa taaca
+//

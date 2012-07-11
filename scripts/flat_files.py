@@ -62,7 +62,8 @@ def main():
     sequences = open(sequences_fp,'w')
     gg_records = open(gg_records_fp, 'w')
     obs_records = open(obs_records_fp, 'w')
-
+    
+    seen = set([])
     for gb_fp in input_gbs:
         logline = log_f("Start parsing of %s..." % gb_fp)
         logger.write(logline)
@@ -84,6 +85,9 @@ def main():
                 break
             except Exception, e:
                 logline = log_f("Caught: %s, previous accession: %s" % (e, accession))
+                logger.write(logline)
+                if verbose:
+                    stdout.write(logline)
                 failure_count += 1
 
             # accession is str including version
@@ -94,6 +98,9 @@ def main():
                 continue
             if accession in observed_records:
                 continue
+            if accession in seen:
+                continue
+                # accession added at the end of this while loop
 
             # sequence is just a str of sequence
             try:
@@ -114,6 +121,7 @@ def main():
                 failure_count += 1
                 continue
 
+            seen.add(accession)
             write_sequence(sequences, accession, sequence)
             write_gg_record(gg_records, gg_record)
             write_obs_record(obs_records, accession)
