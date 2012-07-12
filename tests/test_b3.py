@@ -43,22 +43,22 @@ class B3Tests(TestCase):
         """see if we've got a chimera!"""
         obs_chimera = check_chimera(self.refseqs, self.chimera_id, 
                                     self.chimera_seq)
-        exp_chimera = 1.10771
+        exp_chimera = (1.10771, 'p__Firmicutes', 'p__Bacteroidetes')
         self.assertEqual(obs_chimera, exp_chimera)
 
         del self.refseqs[self.nonchimera_id]
-        exp_non_chimera = None
+        exp_non_chimera = (None, None, None)
         obs_non_chimera = check_chimera(self.refseqs, self.nonchimera_id,
                                         self.nonchimera_seq)
         self.assertEqual(obs_non_chimera, exp_non_chimera)
 
     def test_parse_bel3_result(self):
         """parse bel3 output"""
-        exp_non_chimera = None
+        exp_non_chimera = (None, None, None)
         obs_non_chimera = parse_bel3_result(StringIO(non_chimera_out))
         self.assertEqual(obs_non_chimera, exp_non_chimera)
 
-        exp_chimera = 1.10771
+        exp_chimera = (1.10771, 'p__Firmicutes', 'p__Bacteroidetes')
         obs_chimera = parse_bel3_result(StringIO(chimera_out))
         self.assertEqual(obs_chimera, exp_chimera)
 
