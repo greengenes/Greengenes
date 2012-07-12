@@ -26,7 +26,7 @@ def parse_invariants(lines):
 
     return result
 
-def parse_existing_records(open_file):
+def parse_column(open_file):
     """Load a column of data"""
     return set([l.strip().split('\t')[0] for l in open_file \
                                          if not l.startswith('#')])

@@ -7,7 +7,7 @@ from greengenes.flat_files import get_sequence, get_genbank_summary, \
         get_accession
 from greengenes.write import write_sequence, write_gg_record, \
         write_obs_record
-from greengenes.parse import parse_existing_records
+from greengenes.parse import parse_column
 from greengenes.util import greengenes_open as open, NoSequenceError, \
         WorkflowLogger, generate_log_fp, log_f
 from sys import stdout, stderr, argv
@@ -53,7 +53,7 @@ def main():
     makedirs(output_dir)
     logger = WorkflowLogger(generate_log_fp(output_dir), script_name=argv[0])
 
-    observed_records = parse_existing_records(open(existing_fp))
+    observed_records = parse_column(open(existing_fp))
 
     sequences_fp = os.path.join(output_dir, '%s_sequences.fasta.gz' % tag)
     gg_records_fp = os.path.join(output_dir, '%s_ggrecords.txt.gz' % tag)

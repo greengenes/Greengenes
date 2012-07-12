@@ -17,7 +17,7 @@ class B3Tests(TestCase):
 
     def test_pick_parents(self):
         """pick the best parenst for your sequence"""
-        db = os.path.join(os.getcwd(), 'test_db.fasta')
+        db = os.path.join(os.getcwd(), 'test_data/test_db.fasta')
         exp = [({'NZ_GG739926_647533195':\
                     ref_parents['NZ_GG739926_647533195'],
                'NZ_GG770509_647533119':\

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from cogent.util.unit_test import TestCase, main
-from greengenes.parse import parse_existing_records, parse_gg_summary_flat, \
+from greengenes.parse import parse_column, parse_gg_summary_flat, \
         parse_invariants
 from greengenes.util import GreengenesRecord
 from StringIO import StringIO
@@ -26,11 +26,11 @@ class ParseTests(TestCase):
         obs = parse_invariants(StringIO(invariants))    
         self.assertEqual(obs,exp)
 
-    def test_parse_existing_records(self):
+    def test_parse_column(self):
         """Parse existing records"""
         recs = StringIO(existing_records)
         exp = set(['abc','def','xyz','foo','bar'])
-        obs = parse_existing_records(recs)
+        obs = parse_column(recs)
         self.assertEqual(obs,exp)
 
     def test_parse_gg_summary_flat(self):
