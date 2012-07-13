@@ -10,6 +10,7 @@ from cogent.core.moltype import DNA, RNA, PROTEIN
 from cogent.core.alignment import SequenceCollection
 from cogent.app.blast import blastn
 from math import ceil
+import os
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2007-2011, The Cogent Project"
@@ -70,6 +71,7 @@ def pick_parents(blastdb, ref_seqs,target_sequences,nhits=10,params=None):
     for seq_id, seq in target_sequences:
         query_seqs = [("%d" % i, s) for i,s in \
                                     enumerate(fractionate_sequence(seq))]
+        blastdb = os.path.join(os.getcwd(), blastdb)
         result = blastn(query_seqs, blastdb)
         ref_db = {}
         for q, best_hits in result.bestHitsByQuery(n=nhits):
@@ -77,6 +79,9 @@ def pick_parents(blastdb, ref_seqs,target_sequences,nhits=10,params=None):
                 id_ = rec['SUBJECT ID']
                 ref_db[rec['SUBJECT ID']] = ref_seqs[id_]
         
+        if not ref_db:
+            continue
+
         yield (ref_db,seq_id, seq)
 
 def check_chimera(refseqs, target_id, target_seq):
@@ -104,6 +109,7 @@ def check_chimera(refseqs, target_id, target_seq):
 
     return how_chimeric
 
+from sys import stderr
 def parse_bel3_result(lines):
     """parses bel3 full output
 
@@ -133,6 +139,7 @@ def parse_bel3_result(lines):
             break
 
     if has_result is False:
-        raise ApplicationError, "Cannot interpret result"
+        stderr.write('unable to process: \n')
+        stderr.write(lines)
 
     return (has_result, parent_a, parent_b)
