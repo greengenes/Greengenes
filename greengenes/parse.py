@@ -12,6 +12,40 @@ __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
 
+def parse_b3_chimeras(lines):
+    """Returns [(id_, score, parent_a, parent_b)]"""
+    print "FORCING  > 1.2 divergence!"
+    res = []
+    for line in lines:
+        fields = line.strip().split('\t')
+        if len(fields) != 4:
+            continue
+        if float(fields[1]) < 1.2:
+            continue
+        res.append((fields[0], float(fields[1]), fields[2], fields[3]))
+    return res
+
+def parse_cs_chimeras(lines):
+    """Returns [(id_, parent_a, parent_b)]"""
+    res = []
+    for line in lines:
+        fields = line.strip().split('\t')
+        if len(fields) != 3:
+            continue
+        res.append((fields[0], fields[1], fields[2]))
+    return res
+
+def parse_otus(lines):
+    """parses an otu mapping file
+
+    returns [(otu_id, [ids])]
+    """
+    result = []
+    for l in lines:
+        fields = l.strip().split('\t')
+        result.append((fields[0], fields[1:]))
+    return result
+
 def parse_invariants(lines):
     """Parse the invariants
 
