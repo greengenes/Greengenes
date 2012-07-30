@@ -2,7 +2,8 @@
 
 from cogent.util.unit_test import TestCase, main
 from greengenes.parse import parse_column, parse_gg_summary_flat, \
-        parse_invariants
+        parse_invariants, parse_otus, parse_b3_chimeras, \
+        parse_cs_chimeras
 from greengenes.util import GreengenesRecord
 from StringIO import StringIO
 
@@ -10,7 +11,7 @@ __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "1.5.0-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -18,6 +19,32 @@ __status__ = "Development"
 class ParseTests(TestCase):
     def setUp(self):
         pass
+
+    def test_parse_b3_chimeras(self):
+        """Parse B3 chimera output"""
+        inlines = ["a\t1.2\tparentfoo\tparentbar\n",
+                   "123x\t1.323\txyz\tabc\n"]
+        exp = [('a',1.2,'parentfoo','parentbar'),
+               ('123x',1.323,'xyz','abc')]
+        obs = parse_b3_chimeras(inlines)
+        self.assertEqual(obs,exp)
+
+    def test_parse_cs_chimeras(self):
+        """Parse ChimeraSlayer output"""
+        inlines = ["a\tparentfoo\tparentbar\n",
+                   "123x\txyz\tabc\n"]
+        exp = [('a','parentfoo','parentbar'),
+               ('123x','xyz','abc')]
+        obs = parse_cs_chimeras(inlines)
+        self.assertEqual(obs,exp)
+
+    def test_parse_otus(self):
+        """parse me some tasty otus"""
+        inlines = ["1\tx\ty\tz\n", "10\tpoo\n", "20xad\t30\t20\tfoo\n"]
+        exp = [("1",["x","y","z"]), ("10",["poo"]), 
+               ("20xad", ["30", "20", "foo"])]
+        obs = parse_otus(inlines)
+        self.assertEqual(obs,exp)
 
     def test_parse_invariants(self):
         """Parse the invariants file"""

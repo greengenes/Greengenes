@@ -8,7 +8,7 @@ __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "1.5.0-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -201,7 +201,7 @@ parse_funs = [('ncbi_acc_w_ver', get_accession),
               ('submit_date', get_submit_date),
               ('country', get_country),
               #('NCBI_tax_id', get_taxon),
-              ('prokMSAname', get_prokMSAname),
+              ('prokmsaname', get_prokMSAname),
               ('ncbi_tax_string', get_ncbi_taxonomy)]
 
 # functions requiring information external 

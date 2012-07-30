@@ -15,7 +15,7 @@ __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "1.5.0-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -66,17 +66,33 @@ def main():
     
     existing_records = parse_column(open(existing_fp))
     
-    records = dict([(r['ncbi_acc_w_ver'], GreengenesRecord(r)) \
-                    for r in MinimalGreengenesParser(open(gg_records_fp))])
+    #records = dict([(r['ncbi_acc_w_ver'], r) \
+    #                for r in MinimalGreengenesParser(open(gg_records_fp))])
     
-    for f in opts.aligned.split(','):
-        logline = log_f("Parsing %s..." % f)
-        logger.write(logline)
-        if verbose:
-            stdout.write(logline)
+    for record in MinimalGreengenesParser(open(gg_records_fp)):
+        acc = record['ncbi_acc_w_ver']
 
-        domain = get_domain(f)
+        ### NEED DOMAIN!
+        aln = filter(None, [get_indexed_sequence(i, acc) for i in aligned])
+        noaln = filter(None, [get_indexed_sequence(i, acc) for i in unaligned])
+        
+        if not aln:
+            logline = log_f("GG record %s does not have aligned seq!" % acc)
+            logger.write(logline)
+            if verbose:
+                stdout.write(logline)
+            continue
 
+        if not unaln:
+            logline = log_f("GG record %s does not have aligned seq!" % acc)
+            logger.write(logline)
+            if verbose:
+                stdout.write(logline)
+            continue
+
+        # if > 1 rec, complain
+
+        
         for aln_id, aln_seq in MinimalFastaParser(open(f)):
             id_ = aln_id.split()[0] # strip of any comments
             record = records.get(id_, None)

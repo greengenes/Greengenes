@@ -3,13 +3,16 @@
 from cogent.seqsim.tree import RangeNode
 from gzip import open as gzopen
 from datetime import datetime
+from subprocess import Popen, PIPE
+from StringIO import StringIO
+from cogent.parse.fasta import MinimalFastaParser
 import os
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "1.0-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -107,16 +110,44 @@ class WorkflowLogger(object):
         """Destructor"""
         self.close()
 
+def index_fasta(file_path):
+    """Use cdbfasta to index a file"""
+    form = "cdbfasta %s" % file_path
+    sout, serr, ret = greengenes_system_call(form)
+    if ret != 0:
+        raise ValueError, "Bad system call!"
+    
+def get_indexed_sequence(file_path, id_):
+    """Return a sequence from an indexed file"""
+    form = "cdbyank %s -a %s" % (file_path, id)
+    sout, serr, ret = greengenes_system_call(form)
+    if ret != 0:
+        raise ValueError, "Bad system call!"
+    return MinimalFastaParser(StringIO(sout)).next()
+    
+def greengenes_system_call(cmd):
+    """ Call cmd and return (stdout, stderr, return_value)
+
+    Take from qiime.util
+    """
+    proc = Popen(cmd,shell=True,universal_newlines=True,\
+                 stdout=PIPE,stderr=PIPE)
+    # communicate pulls all stdout/stderr from the PIPEs to 
+    # avoid blocking -- don't remove this line!
+    stdout, stderr = proc.communicate()
+    return_value = proc.returncode
+    return stdout, stderr, return_value
+
 class GreengenesRecord(dict):
     """Represent a full Greengenes record"""
 
     _field = {
         'gg_id':{'type':int, 'desc':'Unique Greengenes universal identifier',
                     'arb_rule':'gg_id', 'required':True},
-        'prokMSA_id':{'type':int, 'desc':"unique Greengenes identifier",
+        'prokmsa_id':{'type':int, 'desc':"unique Greengenes identifier",
                     'arb_rule':'name', 'required':True},
-        'domain':{'type':str, 'desc':"Taxonomic domain",
-                    'arb_rule':'domain', 'required':True},
+        #'domain':{'type':str, 'desc':"Taxonomic domain",
+        #            'arb_rule':'domain', 'required':True},
         'ncbi_acc_w_ver':{'type':str, 'desc':"Genbank accession with version",
                     'arb_rule':"acc", 'required':True},
         'ncbi_gi':{'type':str, 'desc':"Genbank GI",'arb_rule':'ncbi_gi',
@@ -128,7 +159,7 @@ class GreengenesRecord(dict):
                     'arb_rule':'GOLD_stamp','required':False},
         'decision':{'type':str, 'desc':"Whether a clone or a named_isolate",
                     'arb_rule':'sequence_type','required':True},
-        'prokMSAname':{'type':str, 
+        'prokmsaname':{'type':str, 
                     'desc':"[isolation_source] clone [clone] OR [organism]",
                     'arb_rule':'full_name','required':False},
         'isolation_source':{'type':str, 
@@ -159,15 +190,18 @@ class GreengenesRecord(dict):
         'ncbi_tax_string':{'type':str, 
                     'desc':"NCBI Taxonomy string present in Genbank record",
                     'arb_rule':'ncbi_tax','required':False},
-        'Silva_tax_string':{'type':str, 
+        'silva_tax_string':{'type':str, 
                     'desc':"Versioned Silva taxonomy string",
                     'arb_rule':'Silva_tax','required':False},
-        'RDP_tax_string':{'type':str, 'desc':"Versioned RDP taxonomy string",
+        'rdp_tax_string':{'type':str, 'desc':"Versioned RDP taxonomy string",
                     'arb_rule':'RDP_tax','required':False},
         'greengenes_tax_string':{'type':str, 
                     'desc':"Versioned Greengenes taxonomy string",
                     'arb_rule':'greengenes_tax','required':False},
-        'non_ACGT_percent':{'type':float, 
+        'hugenholtz_tax_string':{'type':str, 
+                    'desc':"Hugenholtz taxonomy string",
+                    'arb_rule':'hugenholtz_tax','required':False},
+        'non_acgt_percent':{'type':float, 
                     'desc':"Percent non-ACGT bases in sequence",
                     'arb_rule':'percent_non_ACGT','required':True},
         'perc_ident_to_invariant_core':{'type':float, 
@@ -254,5 +288,5 @@ class GreengenesRecord(dict):
                 continue
             if not isinstance(v, self._field[k]['type']):
                 raise ValueError, "Field %s in prok %s has a bad type" % \
-                                        (k, str(self['prokMSA_id']))
+                                        (k, str(self['prokmsa_id']))
     

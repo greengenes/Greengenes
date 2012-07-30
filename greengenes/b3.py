@@ -11,12 +11,13 @@ from cogent.core.alignment import SequenceCollection
 from cogent.app.blast import blastn
 from math import ceil
 import os
+from types import FileType
 
 __author__ = "Daniel McDonald"
-__copyright__ = "Copyright 2007-2011, The Cogent Project"
+__copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald", "Thomas Huber"]
 __license__ = "GPL"
-__version__ = "1.6.0dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -120,6 +121,9 @@ def parse_bel3_result(lines):
     parent_a = None
     parent_b = None
 
+    if isinstance(lines, FileType):
+        lines = lines.readlines()
+
     for l in lines:
         if l.startswith('divergence ratio:'):
             has_result = float(l.strip().split()[-1])
@@ -140,6 +144,7 @@ def parse_bel3_result(lines):
 
     if has_result is False:
         stderr.write('unable to process: \n')
-        stderr.write(lines)
+        stderr.write('\n'.join(lines))
+        has_result = None
 
     return (has_result, parent_a, parent_b)

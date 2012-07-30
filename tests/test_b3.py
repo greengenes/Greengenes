@@ -7,6 +7,15 @@ from cogent.parse.fasta import MinimalFastaParser
 from StringIO import StringIO
 import os
 
+__author__ = "Daniel McDonald"
+__copyright__ = "Copyright 2012, Greengenes"
+__credits__ = ["Daniel McDonald"]
+__license__ = "GPL"
+__version__ = "0.1-dev"
+__maintainer__ = "Daniel McDonald"
+__email__ = "mcdonadt@colorado.edu"
+__status__ = "Development"
+
 class B3Tests(TestCase):
     def setUp(self):
         self.refseqs = dict(MinimalFastaParser(StringIO(refseqs)))

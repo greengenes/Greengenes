@@ -9,7 +9,7 @@ __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "0.9-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -46,17 +46,18 @@ class UtilTests(TestCase):
 
 class GreengenesRecordTests(TestCase):
     def setUp(self):
-        self.ggrecord = GreengenesRecord({'prokMSA_id':123})
+        self.ggrecord = GreengenesRecord({'prokmsa_id':123})
 
     def test_init(self):
         """test initialization"""
-        exp = {'prokMSA_id':123,
+        exp = {'prokmsa_id':123,
                 'ncbi_acc_w_ver':None,
                 'ncbi_gi':None,
+                'gg_id':None,
                 'db_name':None,
                 'gold_id':None,
                 'decision':None,
-                'prokMSAname':None,
+                'prokmsaname':None,
                 'isolation_source':None,
                 'clone':None,
                 'organism':None,
@@ -70,10 +71,11 @@ class GreengenesRecordTests(TestCase):
                 'submit_date':None, 
                 'country':None,
                 'ncbi_tax_string':None,   
-                'Silva_tax_string':None,
-                'RDP_tax_string':None,
+                'silva_tax_string':None,
+                'rdp_tax_string':None,
                 'greengenes_tax_string':None,
-                'non_ACGT_percent':None,
+                'hugenholtz_tax_string':None,
+                'non_acgt_percent':None,
                 'perc_ident_to_invariant_core':None,
                 'small_gap_intrusions':None,
                 'bellerophon':None,
@@ -83,7 +85,9 @@ class GreengenesRecordTests(TestCase):
                 'chim_slyr_a_tax':None,
                 'chim_slyr_b_tax':None,
                 'aligned_seq':None,
-                'unaligned_seq':None
+                'unaligned_seq':None,
+                'n_pos_aligned':None,
+                'n_pos_unaligned':None
                 } 
         obs = self.ggrecord
         self.assertEqual(obs,exp)
@@ -92,7 +96,7 @@ class GreengenesRecordTests(TestCase):
         """Sets types GG fields"""
         self.ggrecord['ncbi_acc_w_ver'] = 'asd'
         self.ggrecord.setTypes()
-        self.assertEqual(self.ggrecord['prokMSA_id'], 123)
+        self.assertEqual(self.ggrecord['prokmsa_id'], 123)
         self.assertEqual(self.ggrecord['ncbi_acc_w_ver'], 'asd')
 
     def test_getARBRules(self):
@@ -106,22 +110,22 @@ class GreengenesRecordTests(TestCase):
         """Stringamify self"""
         obs = sorted(self.ggrecord.toGreengenesFormat().splitlines())
         exp = sorted(exp_testrecord.splitlines())
-
         self.assertEqual(obs,exp)
     
     def test_sanityCheck(self):
         """verify types are right"""
         self.assertEqual(self.ggrecord.sanityCheck(), None)
-        self.ggrecord['prokMSA_id'] = "bad"
+        self.ggrecord['prokmsa_id'] = "bad"
         self.assertRaises(ValueError, self.ggrecord.sanityCheck)
 exp_testrecord = """BEGIN
-prokMSA_id=123
+prokmsa_id=123
+gg_id=
 ncbi_acc_w_ver=
 ncbi_gi=
 db_name=
 gold_id=
 decision=
-prokMSAname=
+prokmsaname=
 isolation_source=
 clone=
 organism=
@@ -135,10 +139,11 @@ study_id=
 submit_date=
 country=
 ncbi_tax_string=
-Silva_tax_string=
-RDP_tax_string=
+silva_tax_string=
+rdp_tax_string=
 greengenes_tax_string=
-non_ACGT_percent=
+hugenholtz_tax_string=
+non_acgt_percent=
 perc_ident_to_invariant_core=
 small_gap_intrusions=
 bellerophon=
@@ -149,10 +154,12 @@ chim_slyr_a_tax=
 chim_slyr_b_tax=
 aligned_seq=
 unaligned_seq=
+n_pos_aligned=
+n_pos_unaligned=
 END
 
 """
-arbrules = """MATCH   "prokMSA_id\=*"
+arbrules = """MATCH   "prokmsa_id\=*"
 	SRT "*\=="
 	WRITE "name"
 
@@ -163,6 +170,10 @@ MATCH   "ncbi_acc_w_ver\=*"
 MATCH   "ncbi_gi\=*"
 	SRT "*\=="
 	WRITE "ncbi_gi"
+
+MATCH   "gg_id\=*"
+	SRT "*\=="
+	WRITE "gg_id"
 
 MATCH   "db_name\=*"
 	SRT "*\=="
@@ -176,7 +187,7 @@ MATCH   "decision\=*"
 	SRT "*\=="
 	WRITE "sequence_type"
 
-MATCH   "prokMSAname\=*"
+MATCH   "prokmsaname\=*"
 	SRT "*\=="
 	WRITE "full_name"
 
@@ -232,11 +243,11 @@ MATCH   "ncbi_tax_string\=*"
 	SRT "*\=="
 	WRITE "ncbi_tax"
 
-MATCH   "Silva_tax_string\=*"
+MATCH   "silva_tax_string\=*"
 	SRT "*\=="
 	WRITE "Silva_tax"
 
-MATCH   "RDP_tax_string\=*"
+MATCH   "rdp_tax_string\=*"
 	SRT "*\=="
 	WRITE "RDP_tax"
 
@@ -244,7 +255,11 @@ MATCH   "greengenes_tax_string\=*"
 	SRT "*\=="
 	WRITE "greengenes_tax"
 
-MATCH   "non_ACGT_percent\=*"
+MATCH   "hugenholtz_tax_string\=*"
+	SRT "*\=="
+	WRITE "hugenholtz_tax"
+
+MATCH   "non_acgt_percent\=*"
 	SRT "*\=="
 	WRITE "percent_non_ACGT"
 
@@ -287,6 +302,15 @@ MATCH   "aligned_seq\=*"
 MATCH   "unaligned_seq\=*"
 	SRT "*\=="
 	WRITE "unaligned_seq"
+
+MATCH   "n_pos_aligned\=*"
+	SRT "*\=="
+	WRITE "n_pos_aligned"
+
+MATCH   "n_pos_unaligned\=*"
+	SRT "*\=="
+	WRITE "n_pos_unaligned"
+
 """
 
 if __name__ == '__main__':

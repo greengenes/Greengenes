@@ -15,7 +15,7 @@ __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "1.5.0-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -159,7 +159,7 @@ class FlatFilesTests(TestCase):
                 'isolation_source':'anaerobic digested sludge',
                 'organism':'Methanolinea tarda NOBI-1',
                 'strain':'NOBI-1',
-                'prokMSAname':'Methanolinea tarda NOBI-1',
+                'prokmsaname':'Methanolinea tarda NOBI-1',
                 'specific_host':'Methanolinea tarda NOBI-1 ctg73, whole genome shotgun sequence.',
                'authors':'Lucas,S., Han,J., Lapidus,A., Cheng,J.-F., Goodwin,L., Pitluck,S., Peters,L., Land,M.L., Hauser,L., Imachi,H., Sekiguchi,Y., Kamagata,Y., Cadillo-Quiroz,H., Zinder,S., Liu,W.T., Tamaki,H. and Woyke,T.J.',
                'title':'The draft genome of Methanolinea tarda NOBI-1',

@@ -10,7 +10,7 @@ __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
 __credits__ = ["Daniel McDonald"]
 __license__ = "GPL"
-__version__ = "1.5.0-dev"
+__version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
@@ -54,13 +54,17 @@ class WriteTests(TestCase):
     def test_write_gg_record(self):
         """Writes a gg record"""
         exp = sorted(['BEGIN',
-            'prokMSA_id=123',
+            'prokmsa_id=123',
+            'gg_id=',
+            'hugenholtz_tax_string=',
             'ncbi_acc_w_ver=xyz',
             'ncbi_gi=333',
+            'n_pos_aligned=',
+            'n_pos_unaligned=',
             'db_name=',
             'gold_id=',
             'decision=',
-            'prokMSAname=',
+            'prokmsaname=',
             'isolation_source=',
             'clone=foo',
             'organism=',
@@ -74,10 +78,10 @@ class WriteTests(TestCase):
             'submit_date=',
             'country=',
             'ncbi_tax_string=',
-            'Silva_tax_string=',
-            'RDP_tax_string=',
+            'silva_tax_string=',
+            'rdp_tax_string=',
             'greengenes_tax_string=',
-            'non_ACGT_percent=0.5',
+            'non_acgt_percent=0.5',
             'perc_ident_to_invariant_core=',
             'small_gap_intrusions=',
             'bellerophon=',
@@ -89,9 +93,9 @@ class WriteTests(TestCase):
             'aligned_seq=',
             'unaligned_seq=',
             'END',''])
-        ggrec = GreengenesRecord({'prokMSA_id':123,'ncbi_acc_w_ver':'xyz',
+        ggrec = GreengenesRecord({'prokmsa_id':123,'ncbi_acc_w_ver':'xyz',
                                 'ncbi_gi':'333','pubmed':123,'clone':'foo',
-                                  'non_ACGT_percent':'0.5'})
+                                  'non_acgt_percent':'0.5'})
         f = StringIO()
         write_gg_record(f, ggrec)
         f.seek(0)
