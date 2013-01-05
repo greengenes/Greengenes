@@ -4,6 +4,7 @@ from optparse import make_option
 from cogent.util.misc import parse_command_line_parameters
 from greengenes.ncbi import esearch, parse_esearch, bulk_efetch, parse_gi_from_gb
 from gzip import open as open_gz
+import time
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2012, Greengenes"
@@ -65,10 +66,11 @@ def main():
    
     chunk_count = 0
     total_bytes = 0
-    if use_gz:
+    if opts.use_gz:
         poss_output = open_gz(opts.possible_new_gb_out,'w')
     else:
         poss_output = open(opts.possible_new_gb_out,'w')
+    
     collected = set([])
 
     retries = 0
@@ -91,8 +93,8 @@ def main():
                         records.append(l.split(':')[1])
 
                 if opts.verbose:
-                    print "RETRY: %d, Chunk %d, covering %d records, writing %d bytes, %d written in total" % \
-                        (retries, chunk_count, len(records), len(chunk), total_bytes)
+                    print "%s - retry: %d, Chunk %d, covering %d records, writing %d bytes, %d written in total" % \
+                        (time.strftime("%m-%d-%y %H:%M:%S"), retries, chunk_count, len(records), len(chunk), total_bytes)
                 poss_output.write(chunk)
                 collected.update(set(records))
         except Exception, e:
