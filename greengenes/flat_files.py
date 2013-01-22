@@ -31,18 +31,23 @@ def get_gi(r):
 
 clone_names = set(['uncultured','unclassified','unknown.','unidentified',\
                    'unknown','clone','uncultivated'])
+isolate_names = set(['sp', 'bacterium'])
 def get_decision(r):
     """determine clone or isolate"""
-    fields = map(string.lower, r['source'].replace(".","").split())
-    for n in clone_names:
-        if n in fields:
-            return 'clone'
+    current_decision = None
+    
+    fields = set(map(string.lower, r['source'].replace(".","").split()))
+    if len(fields.intersection(clone_names)) > 0:
+        return 'clone'
+    if len(fields.intersection(isolate_names)) > 0:
+        return 'isolate'
 
-    fields = map(string.lower, r['definition'].replace(".","").split())
-    for n in clone_names:
-        if n in fields:
-            return 'clone'
-
+    fields = set(map(string.lower, r['definition'].replace(".","").split()))
+    if len(fields.intersection(clone_names)) > 0:
+        return 'clone'
+    if len(fields.intersection(isolate_names)) > 0:
+        return 'isolate'
+    
     return 'named_isolate'
 
 def get_organism(r):

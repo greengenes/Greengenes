@@ -166,7 +166,7 @@ class FlatFilesTests(TestCase):
                'submit_date':'31-OCT-2011',
                'country':'Japan: Nagaoka',
                #'NCBI_tax_id':'882090',
-               'ncbi_tax_string':'Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Genera incertae sedis; Methanolinea'})
+               'ncbi_tax_string':'Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Methanoregulaceae; Methanolinea'})
         obs = get_genbank_summary(self.gb1)
        
         self.assertEqual(obs,exp)
@@ -212,7 +212,7 @@ class FlatFilesTests(TestCase):
     
     def test_get_ncbi_taxonomy(self):
         """Get the taxonomy string"""
-        exp = "Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Genera incertae sedis; Methanolinea"
+        exp = "Archaea; Euryarchaeota; Methanomicrobia; Methanomicrobiales; Methanoregulaceae; Methanolinea"
         obs = get_ncbi_taxonomy(self.gb1)
         self.assertEqual(obs,exp)
 
