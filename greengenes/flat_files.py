@@ -47,7 +47,12 @@ def get_decision(r):
         return 'clone'
     if len(fields.intersection(isolate_names)) > 0:
         return 'isolate'
-    
+
+    # check if the first character with source is lower case, if so, its an 
+    # isolate
+    if r['source'].split()[0][0].islower():
+        return 'isolate'
+
     return 'named_isolate'
 
 def get_organism(r):
