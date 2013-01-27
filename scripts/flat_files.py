@@ -74,7 +74,11 @@ def main():
         records = MinimalGenbankParser(open(gb_fp))
         
         failure_count = 0
-        alpha = set(['A','T','G','C','a','t','g','c'])
+        alpha = set(['A','T','G','C',
+                     'a','t','g','c',
+                     'N','n',
+                     'R','Y','S','M',
+                     'r','y','s','m'])
 
         while True and (failure_count < max_failures):
             # gracefully handle parser errors to a limit
