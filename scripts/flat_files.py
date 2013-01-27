@@ -78,7 +78,8 @@ def main():
                      'a','t','g','c',
                      'N','n',
                      'R','Y','S','M',
-                     'r','y','s','m'])
+                     'r','y','s','m',
+                     'K','k','W','w'])
 
         while True and (failure_count < max_failures):
             # gracefully handle parser errors to a limit
