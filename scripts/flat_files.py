@@ -79,7 +79,7 @@ def main():
                      'N','n',
                      'R','Y','S','M',
                      'r','y','s','m',
-                     'K','k','W','w'
+                     'K','k','W','w',
                      'V','v','H','h','B','b','D','d'])
 
         while True and (failure_count < max_failures):
