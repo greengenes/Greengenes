@@ -12,6 +12,16 @@ __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
 
+def parse_uchime_chimeras(lines):
+    """Returns [(id_, score, parent_a, parent_b)]"""
+    res = []
+    for l in lines:
+        fields = l.strip().split('\t')
+        if fields[-1] == 'N':
+            continue
+        res.append((fields[1], float(fields[0]), fields[2], fields[3]))
+    return res
+
 def parse_b3_chimeras(lines):
     """Returns [(id_, score, parent_a, parent_b)]"""
     print "FORCING  > 1.2 divergence!"
