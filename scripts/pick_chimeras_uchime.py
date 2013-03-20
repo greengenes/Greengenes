@@ -2,7 +2,6 @@
 
 from greengenes.pick_chimeras import get_overlap, determine_taxon_conflict
 from greengenes.parse import parse_uchime_chimeras
-from t2t.nlevel import load_consensus_map
 from optparse import make_option
 from cogent.util.misc import parse_command_line_parameters
 
@@ -28,10 +27,24 @@ script_info['required_options'] = [\
             help='Taxonomy strings for the reference database')]
 script_info['version'] = __version__
 
+def load_consensus_map(lines):
+    """returns {id_:[taxon,names,...]}"""
+    res = {}
+    for l in lines:
+        fields = l.strip().split('\t')
+        taxons = fields[1].split('; ')
+        
+        assert len(fields) == 2
+        assert len(taxons) == 7
+        
+        res[fields[0]] = taxons
+    return res
+
+
 def main():
     option_parser, opts, args = parse_command_line_parameters(**script_info)
 
-    taxlookup = load_consensus_map(open(opts.ref_taxonomy_map), False)
+    taxlookup = load_consensus_map(open(opts.ref_taxonomy_map))
     uchime_results = parse_uchime_chimeras(open(opts.input_uchime))
     
     output = open(opts.output,'w')
