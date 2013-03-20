@@ -3,7 +3,7 @@
 from cogent.util.unit_test import TestCase, main
 from greengenes.parse import parse_column, parse_gg_summary_flat, \
         parse_invariants, parse_otus, parse_b3_chimeras, \
-        parse_cs_chimeras
+        parse_cs_chimeras, parse_uchime_chimeras
 from greengenes.util import GreengenesRecord
 from StringIO import StringIO
 
@@ -28,6 +28,16 @@ class ParseTests(TestCase):
                ('123x',1.323,'xyz','abc')]
         obs = parse_b3_chimeras(inlines)
         self.assertEqual(obs,exp)
+
+    def test_parse_uchime_chimeras(self):
+        """Parse uchime chimera output"""
+
+        inlines = ["1.7308	GU234509.1	94_12740_108965	94_6884_155789	99.6	98.0	95.5	93.9	98.0	51	1	3	22	2	2	1.63	Y\n",
+                   "0.0000	HQ316978.1	*	*	*	*	*	*	*	*	*	*	*	*	*	*	N\n",
+                   "0.0190	HQ316968.1	94_6884_155789	94_28256_783727	97.8	97.5	97.4	99.3	97.5	6	0	18	4	3	8	0.33	N\n"]
+        exp = [('GU234509.1', 1.7308, '94_12740_108965','94_6884_155789')]
+        obs = parse_uchime_chimeras(inlines)
+        self.assertEqual(obs, exp)
 
     def test_parse_cs_chimeras(self):
         """Parse ChimeraSlayer output"""
