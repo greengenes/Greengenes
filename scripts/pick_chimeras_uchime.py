@@ -40,6 +40,7 @@ def load_consensus_map(lines):
         res[fields[0]] = taxons
     return res
 
+
 def main():
     option_parser, opts, args = parse_command_line_parameters(**script_info)
 
