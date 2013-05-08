@@ -74,6 +74,14 @@ def main():
         records = MinimalGenbankParser(open(gb_fp))
         
         failure_count = 0
+        alpha = set(['A','T','G','C',
+                     'a','t','g','c',
+                     'N','n',
+                     'R','Y','S','M',
+                     'r','y','s','m',
+                     'K','k','W','w',
+                     'V','v','H','h','B','b','D','d'])
+
         while True and (failure_count < max_failures):
             # gracefully handle parser errors to a limit
             try:
@@ -111,6 +119,18 @@ def main():
                 write_obs_record(obs_records, accession)
                 continue
             except:
+                failure_count += 1
+                continue
+
+            # verify the sequence is DNA. NCBI silently corrupts records 
+            # every once and a while leading to crap in the sequence. 
+            # Thanks NCBI.
+            seq_chars = set(sequence)
+            if not seq_chars.issubset(alpha):
+                logline = log_f("Corrupt sequence, accession: %s" % (accession))
+                logger.write(logline)
+                if verbose:
+                    stdout.write(logline)
                 failure_count += 1
                 continue
 
