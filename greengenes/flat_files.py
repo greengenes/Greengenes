@@ -55,6 +55,7 @@ def get_decision(r):
 
     return 'named_isolate'
 
+
 def get_organism(r):
     """Get the organism"""
     res = r['features'][0].get('organism', None)
