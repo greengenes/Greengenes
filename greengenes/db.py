@@ -34,6 +34,36 @@ class GreengenesMySQL(object):
         del self.cursor
         del self.con
 
+    def getPyNASTSequenceGGID(self, gg_id):
+        """Get a single PyNAST sequence by GG_ID"""
+        return self._get_sequence_gg_id("pynast_aligned_seq_id", gg_id)
+
+    def getSSUAlignSequenceGGID(self, gg_id):
+        """Get a single SSU Align sequence by GG_ID"""
+        return self._get_sequence_gg_id("aligned_seq_id", gg_id)
+
+    def getUnalignedSequenceGGID(self, gg_id):
+        """Get a single unaligned sequence by GG_ID"""
+        return self._get_sequence_gg_id("unaligned_seq_id", gg_id)
+
+    def _get_sequence_gg_id(self, field, gg_id):
+        """Get a sequence by GG ID
+        
+        Returns None if not found or GG_ID doesn't exist
+        """
+        try:
+            n = self.cursor.execute("""SELECT s.sequence
+                                       FROM greengenes g INNER JOIN
+                                            sequence s ON g.%s=s.seq_id
+                                       WHERE g.gg_id=%d""" %(field,int(gg_id)))
+        except ProgrammingError:
+            return None
+
+        if n == 0:
+            return None
+        else:
+            return self.cursor.fetchone()[0]
+
     def _update_seq_field(self, seqs, field_name):
         """update greengenes record"""
         self._lock([('greengenes', None, 'write'), 
