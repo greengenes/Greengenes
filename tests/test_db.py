@@ -20,12 +20,22 @@ class GGMySQLTests(TestCase):
         del self.db
 
     def test_updateGreengenesTaxonomy(self):
-        """Update greengenes taxonomy strings"""
-        taxmap = {86:"foo bar", 3:'yay number 3', '4':'slightly malformed id'}
-        self.fail()
+        """Update Greengenes taxonomy strings"""
+        taxmap = {86:"foo bar", 3:'yay number 3', '4':'slightly malformed id',
+                  57:None}
+        exp = dict([(int(k), v) for k,v in taxmap.items()])
+        self.db.updateGreengenesTaxonomy(taxmap, "TESTING")
+        obs = self.db.getGreengenesTaxonomyMultipleGGID([86,3,4,57])
+        self.assertEqual(obs,exp)
 
-    def test_updateGreengenesTaxonomy(self):
-        self.fail() 
+    def test_updateNCBITaxonomy(self):
+        """Update NCBI taxonomy strings"""
+        taxmap = {86:"foo bar", 3:'yay number 3', '4':'slightly malformed id',
+                  57:None}
+        exp = dict([(int(k), v) for k,v in taxmap.items()])
+        self.db.updateNCBITaxonomy(taxmap, "TESTING")
+        obs = self.db.getNCBITaxonomyMultipleGGID([86,3,4,57])
+        self.assertEqual(obs,exp)
 
     def test_update_taxonomy(self):
         """implicitly tested by other taxonomy update methods"""
@@ -115,6 +125,11 @@ class GGMySQLTests(TestCase):
         """get the max seq id"""
         # as of gg_13_5... 
         self.assertEqual(self.db._get_max_seqid(), 2796094)
+
+    def test_get_max_taxid(self):
+        """get the max seq id"""
+        # as of gg_13_5... 
+        self.assertEqual(self.db._get_max_taxid(), 7558683)
 
     def test_locking(self):
         """Lock some tables"""

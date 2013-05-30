@@ -108,6 +108,55 @@ class GreengenesMySQL(object):
         else:
             return []
 
+    def updateGreengenesTaxonomy(self, tax_map, version):
+        """Update Greengenes taxonomy fields"""
+        self._update_tax_field('greengenes_tax_id', tax_map, version)
+
+    def updateNCBITaxonomy(self, tax_map, version='NA'):
+        """Update NCBI taxonomy fields"""
+        self._update_tax_field('ncbi_tax_id', tax_map, version)
+
+    def _update_tax_field(self, field_name, taxmap, version):
+        """Insert taxonomy records, update greengenes records"""
+        self._lock([('greengenes', None, 'write'), 
+                    ('taxonomy', None, 'write')])
+
+        next_tax_id = self._get_max_taxid() + 1
+        for gg_id, tax_string in taxmap.items():
+            if tax_string is None:
+                try:
+                    self.cursor.execute("""
+                        UPDATE greengenes
+                        SET %s=NULL
+                        WHERE gg_id=%d""" % (field_name, int(gg_id)))
+                    self.con.commit()
+                except ProgrammingError:
+                    self.con.rollback()
+                    self._unlock()
+                    raise ValueError, "Unable to insert taxonomy for gg_id %s!" \
+                            % gg_id
+
+            else:
+                try:
+                    self.cursor.execute("""
+                        INSERT INTO taxonomy(tax_id, tax_version, tax_string)
+                        VALUES (%d, '%s', '%s')""" % (next_tax_id, version, 
+                                                      tax_string))
+                    self.cursor.execute("""
+                        UPDATE greengenes
+                        SET %s=%d
+                        WHERE gg_id=%d
+                        """ % (field_name, next_tax_id, int(gg_id)))
+                    self.con.commit()
+                    next_tax_id += 1
+                except ProgrammingError:
+                    self.con.rollback()
+                    self._unlock()
+                    raise ValueError, "Unable to insert taxonomy for gg_id %s!" \
+                            % gg_id
+
+        self._unlock()
+          
     def getNCBITaxonomyMultipleGGID(self, ggids):
         """Query multiple GGIDs at a time"""
         return self._get_multiple_taxonomy_strings_ggid('ncbi_tax_id', ggids)
@@ -214,7 +263,6 @@ class GreengenesMySQL(object):
 
         self._unlock()
 
-
     def updatePyNASTSequences(self, seqs):
         """seqs -> {gg_id:sequence}"""
         self._update_seq_field(seqs, "pynast_aligned_seq_id")
@@ -257,6 +305,27 @@ class GreengenesMySQL(object):
             self.cursor.execute("UNLOCK TABLES")
             self._have_locks = False
             self._lock_aliases = {}
+
+    def _get_max_taxid(self):
+        """Returns the max observed taxonomy id"""
+        if self._have_locks:
+            if 'taxonomy' not in self._lock_aliases:
+                raise ValueError, "We're locked and cannot access table 'taxonomy'"
+            else: 
+                if self._lock_aliases['taxonomy'] is None:
+                    query = "SELECT MAX(tax_id) FROM taxonomy"
+                else:
+                    query = """SELECT MAX(tax_id)
+                           FROM taxonomy %s""" % self._lock_aliases['taxonomy']
+        else:
+            query = "SELECT MAX(tax_id) FROM taxonomy"
+
+        try:
+            self.cursor.execute(query)
+        except:
+            raise ValueError, "Unable to query"
+
+        return self.cursor.fetchone()[0]
 
     def _get_max_seqid(self):
         """Returns the max observed sequence id"""
