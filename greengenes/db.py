@@ -76,7 +76,7 @@ class GreengenesMySQL(object):
 
         for chunk in bin_ids:
             if directio_basename is not None:
-                out = gzopen(directio_basename + '_%d.gz' % file_count, 'w')
+                out = gzopen(directio_basename + '_%d.txt.gz' % file_count, 'w')
             
             joined_ids = ','.join(map(str, chunk))
             self.cursor.execute(FULL_RECORD_DUMP % (aln_seq_field, joined_ids))
