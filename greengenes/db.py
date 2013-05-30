@@ -2,6 +2,7 @@
 
 from MySQLdb import connect, ProgrammingError
 from random import choice
+from gzip import open as gzopen
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2013, Greengenes"
@@ -11,6 +12,30 @@ __version__ = "0.1-dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
+
+FULL_RECORD_DUMP = """SELECT gg_id,prokmsa_id,ncbi_acc_w_ver,ncbi_gi,db_name,gold_id,decision,prokmsaname,isolation_source,clone,organism,strain,specific_host,authors,title,journal,pubmed,submit_date,country,nt.tax_string AS ncbi_tax_string,st.tax_string AS silva_tax_string,gg.tax_string AS greengenes_tax_string,h.tax_string AS hugenholtz_tax_id,non_acgt_percent,perc_ident_to_invariant_core,small_gap_intrusions,bel3_div_ratio,bel3_a,bel3_b,b3a.tax_string AS bel3_a_tax,b3b.tax_string AS bel3_b_tax,chim_slyr_a,chim_slyr_b,csa.tax_string AS chim_slyr_a_tax,csb.tax_string AS chim_slyr_b_tax,aseq.sequence AS aligned_seq
+FROM greengenes g
+LEFT JOIN taxonomy st ON st.tax_id=g.silva_tax_id
+LEFT JOIN taxonomy nt ON nt.tax_id=g.ncbi_tax_id
+LEFT JOIN taxonomy h ON h.tax_id=g.hugenholtz_tax_id
+LEFT JOIN taxonomy gg ON gg.tax_id=g.greengenes_tax_id
+LEFT JOIN taxonomy b3a ON b3a.tax_id=g.bel3_a_tax_id
+LEFT JOIN taxonomy b3b ON b3b.tax_id=g.bel3_b_tax_id
+LEFT JOIN taxonomy csa ON csa.tax_id=g.chim_slyr_a_tax_id
+LEFT JOIN taxonomy csb ON csb.tax_id=g.chim_slyr_b_tax_id
+LEFT JOIN sequence aseq ON aseq.seq_id=g.%s
+WHERE g.gg_id IN (%s)"""
+
+FULL_RECORD_ORDER = ["gg_id","prokmsa_id","ncbi_acc_w_ver","ncbi_gi","db_name",
+                     "gold_id","decision","prokmsaname","isolation_source",
+                     "clone","organism","strain","specific_host","authors",
+                     "title","journal","pubmed","submit_date","country",
+                     "ncbi_tax_string","silva_tax_string",
+                     "greengenes_tax_string","hugenholtz_tax_id",
+                     "non_acgt_percent","perc_ident_to_invariant_core",
+                     "small_gap_intrusions","bel3_div_ratio","bel3_a","bel3_b",
+                     "bel3_a_tax","bel3_b_tax","chim_slyr_a","chim_slyr_b",
+                     "chim_slyr_a_tax","chim_slyr_b_tax","aligned_seq"]
 
 ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 class GreengenesMySQL(object):
@@ -34,6 +59,55 @@ class GreengenesMySQL(object):
         del self.cursor
         del self.con
 
+    def bulkFetchARBRecords(self, ids, aln_seq_field, directio_basename=None, 
+            size=10000):
+        """Bulk fetch ARB records
+        
+        If direct IO, data written direct to file(s). Data are written gzip'd,
+        and spread over multiple files. directio_basename is the base 
+        filename, and that name is tagged with a unique number
+        """
+        bin_ids = (ids[i:i+size] for i in xrange(0, len(ids), size))
+
+        if directio_basename is not None:
+            file_count = 0
+        else:
+            out = []
+
+        for chunk in bin_ids:
+            if directio_basename is not None:
+                out = gzopen(directio_basename + '_%d.gz' % file_count, 'w')
+            
+            joined_ids = ','.join(map(str, chunk))
+            self.cursor.execute(FULL_RECORD_DUMP % (aln_seq_field, joined_ids))
+            
+            for rec in self.cursor.fetchall():
+                rec_lines = []
+                rec_lines.append("BEGIN\n")
+                for o,x in zip(FULL_RECORD_ORDER, rec):
+                    if o == 'aligned_seq':
+                        rec_lines.append("warning=\n")
+
+                    if x is not None:
+                        rec_lines.append("%s=%s\n" % (o, str(x)))
+                    else:
+                        rec_lines.append("%s=\n" % o)
+                rec_lines.append("END\n\n")
+
+                if directio_basename is not None:
+                    out.write(''.join(rec_lines))
+                else:
+                    out.extend(rec_lines)
+            
+            if directio_basename is not None:
+                out.close()
+                file_count += 1
+
+        if directio_basename is None:
+            return out
+        else:
+            return []
+        
     def getPyNASTSequenceGGID(self, gg_id):
         """Get a single PyNAST sequence by GG_ID"""
         return self._get_sequence_gg_id("pynast_aligned_seq_id", gg_id)
