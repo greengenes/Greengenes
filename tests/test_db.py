@@ -19,6 +19,69 @@ class GGMySQLTests(TestCase):
     def tearDown(self):
         del self.db
 
+    def test_updateGreengenesTaxonomy(self):
+        """Update greengenes taxonomy strings"""
+        taxmap = {86:"foo bar", 3:'yay number 3', '4':'slightly malformed id'}
+        self.fail()
+
+    def test_updateGreengenesTaxonomy(self):
+        self.fail() 
+
+    def test_update_taxonomy(self):
+        """implicitly tested by other taxonomy update methods"""
+        pass
+    
+    def test_getGreengenesTaxononmySingleGGID(self):
+        """Get a Greengenes taxonomy string by GGID"""
+        exp_86 = "k__Archaea; p__Euryarchaeota; c__Methanobacteria; o__Methanobacteriales; f__Methanobacteriaceae; g__Methanobrevibacter; s__"
+        exp_3 = None
+        exp_4 = "k__Archaea; p__[Parvarchaeota]; c__[Parvarchaea]; o__YLA114; f__; g__; s__"
+        
+        obs_86 = self.db.getGreengenesTaxonomySingleGGID(86)
+        obs_3 = self.db.getGreengenesTaxonomySingleGGID(3)
+        obs_4 = self.db.getGreengenesTaxonomySingleGGID(4)
+
+        self.assertEqual(obs_86, exp_86)
+        self.assertEqual(obs_3, exp_3)
+        self.assertEqual(obs_4, exp_4)
+    
+    def test_getGreengenesTaxonomyMultipleGGID(self):
+        """Get multiple taxonomy strings by GGIDs"""
+        exp = {3:None,4:"k__Archaea; p__[Parvarchaeota]; c__[Parvarchaea]; o__YLA114; f__; g__; s__",
+               86:"k__Archaea; p__Euryarchaeota; c__Methanobacteria; o__Methanobacteriales; f__Methanobacteriaceae; g__Methanobrevibacter; s__"}
+        obs = self.db.getGreengenesTaxonomyMultipleGGID([3,4,86])
+        self.assertEqual(obs, exp)
+
+    def test_getNCBITaxonomySingleGGID(self):
+        """Get a NCBI taxonomy string by GGID"""
+        exp_3 = "Archaea; Euryarchaeota; Methanococci; Methanococcales; Methanocaldococcaceae; Methanocaldococcus"
+        exp_4 = "Archaea; environmental samples"
+        exp_86 = "Archaea; Euryarchaeota; Methanobacteria; Methanobacteriales; Methanobacteriaceae; Methanobrevibacter"
+
+        obs_3 = self.db.getNCBITaxonomySingleGGID(3)
+        obs_4 = self.db.getNCBITaxonomySingleGGID(4)
+        obs_86 = self.db.getNCBITaxonomySingleGGID(86)
+
+        self.assertEqual(obs_3, exp_3)
+        self.assertEqual(obs_4, exp_4)
+        self.assertEqual(obs_86, exp_86)
+    
+    def test_getNCBITaxonomyMultipleGGID(self):
+        """Get multiple NCBI taxonomy strings by GGID"""
+        exp = {3:"Archaea; Euryarchaeota; Methanococci; Methanococcales; Methanocaldococcaceae; Methanocaldococcus",
+               4:"Archaea; environmental samples",
+               86:"Archaea; Euryarchaeota; Methanobacteria; Methanobacteriales; Methanobacteriaceae; Methanobrevibacter"}
+        obs = self.db.getNCBITaxonomyMultipleGGID([3,4,86])
+        self.assertEqual(obs, exp)
+
+    def test_get_multiple_taxonomy_string_ggid(self):
+        """implicitly tested by other taxonomy getters"""
+        pass
+
+    def test_get_single_taxonomy_string_ggid(self):
+        """implicitly tested by other taxonomy getters"""
+        pass
+
     def test_bulkFetchARBRecords(self):
         """Bulk fetch records for ARB import"""
         ids = [86,79,50]

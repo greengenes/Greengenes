@@ -107,7 +107,57 @@ class GreengenesMySQL(object):
             return out
         else:
             return []
+
+    def getNCBITaxonomyMultipleGGID(self, ggids):
+        """Query multiple GGIDs at a time"""
+        return self._get_multiple_taxonomy_strings_ggid('ncbi_tax_id', ggids)
+
+    def getGreengenesTaxonomyMultipleGGID(self, ggids):
+        """Query multiple GGIDs at a time"""
+        return self._get_multiple_taxonomy_strings_ggid('greengenes_tax_id', \
+                ggids)
+
+    def _get_multiple_taxonomy_strings_ggid(self, field, ggids):
+        """Get multiple taxonomy strings by GGIDs"""
+        res = dict([(int(i), None) for i in ggids])
+        ggids = ",".join(map(str, ggids))
+        try:
+            n = self.cursor.execute("""
+                SELECT g.gg_id, t.tax_string
+                FROM greengenes g INNER JOIN
+                     taxonomy t ON g.%s=t.tax_id
+                WHERE g.gg_id in (%s)""" % (field, ggids))
+        except ProgrammingError:
+            raise ValueError, "Failed query!"
         
+        res.update(dict(self.cursor.fetchall()))
+        return res
+
+    def getNCBITaxonomySingleGGID(self, ggid):
+        """Get a taxonomy string by GGID"""
+        return self._get_single_taxonomy_string_ggid("ncbi_tax_id", ggid)
+
+    def getGreengenesTaxonomySingleGGID(self, ggid):
+        """Get a taxonomy string by GGID"""
+        return self._get_single_taxonomy_string_ggid("greengenes_tax_id", ggid)
+
+    def _get_single_taxonomy_string_ggid(self, field, ggid):
+        """Get a single taxonomy string by ggid"""
+        try:
+            n = self.cursor.execute("""
+                SELECT t.tax_string
+                FROM greengenes g INNER JOIN
+                     taxonomy t ON g.%s=t.tax_id
+                WHERE g.gg_id=%d""" % (field, int(ggid)))
+        except ProgrammingError:
+            raise ValueError, "Failed query!"
+
+        res = self.cursor.fetchone()
+        if res is None:
+            return None
+        else:
+            return res[0]
+
     def getPyNASTSequenceGGID(self, gg_id):
         """Get a single PyNAST sequence by GG_ID"""
         return self._get_sequence_gg_id("pynast_aligned_seq_id", gg_id)
