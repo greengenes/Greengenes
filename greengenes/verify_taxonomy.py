@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-from t2t.nlevel import make_consensus_tree, load_consensus_map, \
-        set_rank_order
-from operator import add 
-
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2013, Greengenes"
 __credits__ = ["Daniel McDonald"]
@@ -15,33 +11,6 @@ __status__ = "Development"
 
 class ParseError(Exception):
     pass
-
-def cache_tipnames(t):
-    """cache tipnames on the internal nodes"""
-    for n in t.postorder(include_self=True):
-        if n.istip():
-            n.TipNames = [n.Name]
-        else:
-            n.TipNames = reduce(add, [c.TipNames for c in n.Children])
-
-### BAD NAME, these aren't polyphyletic, but mistakes in taxonomy
-def get_polyphyletic(cons):
-    """get polyphyletic groups and a representative tip"""
-    tips, taxonstrings = zip(*cons.items()) # unzip
-    tree, lookup = make_consensus_tree(taxonstrings, False, tips=tips)
-    cache_tipnames(tree)
-
-    count = 0 
-    names = {}
-    for n in tree.nontips():
-        if n.Name is None:
-            continue
-        if (n.Name, n.Rank) not in names:
-            names[(n.Name, n.Rank)] = {}
-        if n.Parent is not None:
-            names[(n.Name, n.Rank)][n.Parent.Name] = n.TipNames[0] # get a rep
-    
-    return names
 
 def check_parse(line):
     """Make sure the line can parse into (id_, [some,thing])"""
@@ -113,17 +82,3 @@ if __name__ == '__main__':
             stderr.write(l)
         
         counter += 1
-
-    ### for the pretty_make_taxonomy check
-    #conmap_f = argv[1]
-    #output_f = argv[2]
-    #rankorder = argv[3]
-    
-    #rankorder = rankorder.split(',')
-    #set_rank_order(rankorder)
-
-    #lines = open(conmap_f,'U').readlines()
-   # 
-   # conmap = load_consensus_map(lines, False)
-   # names = get_polyphyletic(conmap)
-

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-from cogent.parse.tree import DndParser
 from cogent.util.unit_test import TestCase, main
 from greengenes.verify_taxonomy import check_parse, check_n_levels, check_gap, \
-        check_prefixes, ParseError, cache_tipnames, get_polyphyletic
+        check_prefixes, ParseError
 
 __author__ = "Daniel McDonald"
 __copyright__ = "Copyright 2013, Greengenes"
@@ -69,43 +68,6 @@ class VerifyTaxonomy(TestCase):
         self.assertFalse(check_prefixes(parsed, prefixes))
     
         self.fail("check duplicate ranks")
-
-    def test_cache_tipnames(self):
-        """caches tipnames"""
-        t = DndParser("((a,b)c,(d,e)f)g;")
-        cache_tipnames(t)
-    
-        self.assertEqual(t.TipNames, ['a','b','d','e'])
-        self.assertEqual(t.Children[0].TipNames,['a','b'])
-        self.assertEqual(t.Children[1].TipNames,['d','e'])
-
-    def test_get_polyphyletic(self):
-        """get polyphyletic groups"""
-        cons = {'a':['K','X1','X'],
-                'b':['K','X1','X'],
-                'd':['K','X1','Y'],
-                'e':['K','X1','Y'],
-                'g':['K','X2','Z'],
-                'h':['K','X2','Z'],
-                'i':['K','X2','X'],
-                'j':['K','X2','X']}
-
-        exp_poly = {('X',2):{'X1':'a','X2':'i'},
-                    ('Y',2):{'X1':'d'},
-                    ('Z',2):{'X2':'g'},
-                    ('X1',1):{'K':'a'},
-                    ('X2',1):{'K':'g'},
-                    ('K',0):{None:'a'}}
-
-        obs_poly = get_polyphyletic(cons)
-            
-        self.assertEqual(len(obs_poly), 6)
-        self.assertEqual(sorted(obs_poly[('X',2)].keys()), ['X1','X2'])
-        self.assertEqual(sorted(obs_poly[('Y',2)].keys()), ['X1'])
-        self.assertEqual(sorted(obs_poly[('Z',2)].keys()), ['X2'])
-        self.assertEqual(sorted(obs_poly[('X1',1)].keys()), ['K'])
-        self.assertEqual(sorted(obs_poly[('X2',1)].keys()), ['K'])
-        self.assertEqual(sorted(obs_poly[('K',0)].keys()), [None])
 
 good_string = "1	k__a; p__b; c__c; o__d; f__e; g__f; s__g"
 bad_string = "2 k__a; p__b; c__c; o__d; f__e; g__f; s__g" # space instead of tab
