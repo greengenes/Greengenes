@@ -14,10 +14,10 @@ import os
 from types import FileType
 
 __author__ = "Daniel McDonald"
-__copyright__ = "Copyright 2012, Greengenes"
+__copyright__ = "Copyright 2007-2011, The Cogent Project"
 __credits__ = ["Daniel McDonald", "Thomas Huber"]
 __license__ = "GPL"
-__version__ = "0.1-dev"
+__version__ = "1.6.0dev"
 __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
