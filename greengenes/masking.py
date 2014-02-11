@@ -15,7 +15,7 @@ def inflate_by_mask(seq, mask):
     complain if the number of positions in seq is != to sum(mask)
     """
     s = []
-    idx = 0 
+    idx = 0
     for m in mask:
         if m:
             s.append(seq[idx])
@@ -30,7 +30,7 @@ def inflate_by_mask(seq, mask):
 
 def img_best_16s_per_genome(masked, unmasked):
     """Keeps the longest masked sequence per genome
-    
+
     expects IDs to be "accession|genome_id"
     """
     to_keep = {}
@@ -52,7 +52,7 @@ def img_best_16s_per_genome(masked, unmasked):
 
     for genome_id, lengths in len_genome.items():
         masked_length, accession = sorted(lengths)[-1] # take the longest one
-        
+
         if accession:
             seq_id = '|'.join([accession,genome_id])
         else:
@@ -64,7 +64,7 @@ def img_best_16s_per_genome(masked, unmasked):
                               'unmasked_length=%d' % unmasked_length])
 
         seq_header = '\t'.join([seq_id, seq_info])
-        
+
         to_keep[seq_header] = masked[seq_id]
 
     return to_keep
@@ -75,12 +75,10 @@ if __name__ == '__main__':
     from sys import argv
 
     masked = dict(MinimalFastaParser(open(argv[1])))
-    unmasked = dict(MinimalFastaParser(open(argv[2])))
     mask = [int(c) for c in open(argv[3]).read().strip()]
-    best = img_best_16s_per_genome(masked,unmasked)
 
     f = open(argv[4],'w')
-    for seqid, seq in best.items():
+    for seqid, seq in masked:
         inflated = inflate_by_mask(seq, mask)
         f.write('>%s\n%s\n' % (seqid, inflated))
 
