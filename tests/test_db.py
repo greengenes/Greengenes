@@ -40,13 +40,13 @@ class GGMySQLTests(TestCase):
     def test_update_taxonomy(self):
         """implicitly tested by other taxonomy update methods"""
         pass
-    
+
     def test_getGreengenesTaxononmySingleGGID(self):
         """Get a Greengenes taxonomy string by GGID"""
         exp_86 = "k__Archaea; p__Euryarchaeota; c__Methanobacteria; o__Methanobacteriales; f__Methanobacteriaceae; g__Methanobrevibacter; s__"
         exp_3 = None
         exp_4 = "k__Archaea; p__[Parvarchaeota]; c__[Parvarchaea]; o__YLA114; f__; g__; s__"
-        
+
         obs_86 = self.db.getGreengenesTaxonomySingleGGID(86)
         obs_3 = self.db.getGreengenesTaxonomySingleGGID(3)
         obs_4 = self.db.getGreengenesTaxonomySingleGGID(4)
@@ -54,7 +54,7 @@ class GGMySQLTests(TestCase):
         self.assertEqual(obs_86, exp_86)
         self.assertEqual(obs_3, exp_3)
         self.assertEqual(obs_4, exp_4)
-    
+
     def test_getGreengenesTaxonomyMultipleGGID(self):
         """Get multiple taxonomy strings by GGIDs"""
         exp = {3:None,4:"k__Archaea; p__[Parvarchaeota]; c__[Parvarchaea]; o__YLA114; f__; g__; s__",
@@ -75,7 +75,7 @@ class GGMySQLTests(TestCase):
         self.assertEqual(obs_3, exp_3)
         self.assertEqual(obs_4, exp_4)
         self.assertEqual(obs_86, exp_86)
-    
+
     def test_getNCBITaxonomyMultipleGGID(self):
         """Get multiple NCBI taxonomy strings by GGID"""
         exp = {3:"Archaea; Euryarchaeota; Methanococci; Methanococcales; Methanocaldococcaceae; Methanocaldococcus",
@@ -98,7 +98,8 @@ class GGMySQLTests(TestCase):
         exp = [e for e in example_arb_recs.splitlines() if e]
         obs = self.db.bulkFetchARBRecords(ids, "aligned_seq_id")
         obs = [o.strip() for o in obs if o.strip()]
-        self.assertEqual(sorted(obs), sorted(exp)) 
+
+        self.assertEqual(sorted(obs), sorted(exp))
 
     def test_getPyNASTSequenceGGID(self):
         """Get a single PyNAST sequence by GG_ID"""
@@ -113,9 +114,65 @@ class GGMySQLTests(TestCase):
         self.assertEqual(obs, exp)
 
     def test_getUnalignedSequenceGGID(self):
-        # insert, then pull out
-        self.fail()
+        exp = gg_id_86_unaligned_seq
+        obs = self.db.getUnalignedSequenceGGID(86)
+        self.assertEqual(obs, exp)
 
+    def test_insertSequence(self):
+        exp_seq = "AATTGGCC"
+        exp_id = self.db._get_max_seqid() + 1
+        obs_id = self.db.insertSequence(exp_seq)
+        self.db.cursor.execute("select sequence from sequence where seq_id=%d"\
+                % exp_id)
+        obs_seq = self.db.cursor.fetchone()[0]
+        self.assertEqual(obs_id, exp_id)
+        self.assertEqual(obs_seq, exp_seq)
+
+    def test_insertTaxonomy(self):
+        exp_tax = "a; b; c"
+        exp_name = "TEST"
+        exp_id = self.db._get_max_taxid() + 1
+        obs_id = self.db.insertTaxonomy(exp_tax, exp_name)
+        self.db.cursor.execute("""select tax_string, tax_version
+                                  from taxonomy where tax_id=%d""" % exp_id)
+        obs_tax, obs_name = self.db.cursor.fetchone()
+        self.assertEqual(obs_id, exp_id)
+        self.assertEqual(obs_tax, exp_tax)
+        self.assertEqual(obs_name, exp_name)
+
+    def test_insertRecord(self):
+        exp_id = self.db._get_max_ggid() + 1
+        exp_rec = {'ncbi_acc_w_ver': 'test',
+                   'decision':'test_dec'}
+        exp_name = "test_name"
+        obs_id = self.db.insertRecord(exp_rec.copy(), exp_name)
+
+        self.db.cursor.execute("""
+                select ncbi_acc_w_ver, decision
+                from greengenes
+                where gg_id=%d""" % exp_id)
+        obs_rec = self.db.cursor.fetchone()
+        obs_rec = {k:v for k,v in zip(["ncbi_acc_w_ver","decision"], obs_rec)}
+
+        self.db.cursor.execute("select name from gg_release where gg_id=%d" \
+                              % exp_id)
+        obs_name = self.db.cursor.fetchone()[0]
+
+        self.assertEqual(obs_id, exp_id)
+        self.assertEqual(obs_rec, exp_rec)
+        self.assertEqual(obs_name, exp_name)
+
+    def test_insertOTU(self):
+        self.db.insertOTU(49, [40,7,32], 'test', 0.123)
+        self.db.cursor.execute("select * from otu_cluster")
+        exp = (1, 49, 0.123, 'test')
+        obs = self.db.cursor.fetchall()[0]
+        self.assertEqual(obs, exp)
+
+        self.db.cursor.execute("select * from otu")
+        exp = [(1, 1, 40), (2, 1, 7), (3, 1, 32), (4, 1, 49)]
+        obs = self.db.cursor.fetchall()
+        self.assertEqual(sorted(obs), exp)
 
     def test_get_sequence_ggid(self):
         """Implicitly tested by other sequence obtaining methods"""
@@ -123,23 +180,23 @@ class GGMySQLTests(TestCase):
 
     def test_get_max_seqid(self):
         """get the max seq id"""
-        # as of gg_13_5... 
-        self.assertEqual(self.db._get_max_seqid(), 2796094)
+        # as of gg_13_5...
+        self.assertEqual(self.db._get_max_seqid(), 2811319)
 
     def test_get_max_taxid(self):
         """get the max seq id"""
-        # as of gg_13_5... 
+        # as of gg_13_5...
         self.assertEqual(self.db._get_max_taxid(), 7558683)
 
     def test_locking(self):
         """Lock some tables"""
         self.assertRaises(ValueError, self.db._lock, [['a','b','c']])
         self.assertEqual(self.db._have_locks, False)
-        
+
         self.db._lock([['greengenes','g','read']])
         self.assertTrue(self.db._have_locks)
         self.assertEqual(self.db._lock_aliases, {'greengenes':'g'})
-        
+
         self.db._unlock()
         self.assertFalse(self.db._have_locks)
         self.assertEqual(self.db._lock_aliases, {})
@@ -154,7 +211,7 @@ class GGMySQLTests(TestCase):
         self.db.updatePyNASTSequences(seqs)
 
         exp = seqs
-        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence 
+        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
                                 from greengenes g inner join sequence s
                                     on g.pynast_aligned_seq_id=s.seq_id
                                 where g.gg_id in (%s)""" % ','.join(exp.keys()))
@@ -171,7 +228,7 @@ class GGMySQLTests(TestCase):
         self.db.updateSSUAlignSequences(seqs)
 
         exp = seqs
-        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence 
+        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
                                 from greengenes g inner join sequence s
                                     on g.aligned_seq_id=s.seq_id
                                 where g.gg_id in (%s)""" % ','.join(exp.keys()))
@@ -188,7 +245,7 @@ class GGMySQLTests(TestCase):
         self.db.updateUnalignedSequences(seqs)
 
         exp = seqs
-        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence 
+        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
                                 from greengenes g inner join sequence s
                                     on g.unaligned_seq_id=s.seq_id
                                 where g.gg_id in (%s)""" % ','.join(exp.keys()))
@@ -199,6 +256,7 @@ class GGMySQLTests(TestCase):
         """tested implicitly by other sequence field update methods"""
         pass
 
+gg_id_86_unaligned_seq = "GCTACTGCTATTGGGATTCGATTAAGCCATNCAAGTTGAACGAATTTAGATTCGTGGCGTACGGCTCAGTAACACGTGGATAACCTACCCTTAGGACTGGGATAACTCTGGGAAACTGGGGATAATACCGGATAGGCAATTTTTCCTGTAATGGTTTTTTGTTTAAATGTTTTTTTTCGCCTAAGGATGGGTCTGCGGCAGATTAGGTAGTTGGTTAGGTAATGGCTTACCAAGCCGTTGATCTGTACGGGTTGTGAGAGCAAGAGCCCGGAGATGGAACCTGAGACAAGGTTCCAGGCCCTACGGGGCGCAGCAGGCGCGAAACCTCCGCAATGTGAGAAATCGCGACGGGGGGATCCCAAGTGCCATTCTTAACGGGATGGCTTTTCATTAGTGTAAAGAGCTTTTGGAATAAGAGCTGGGCAAGACCGTTGCCAACCGCCGCGGTAACACCGTCAGCTCTAGTGGTAGCAGTTTTTATTGGGCCTAAAGCGTCCGTAGCCGGTTTATTAAGTCTCTGGTGAAATCCTGTAGCTTAACTGTGGGAATTGCTGGAGATACTAGTAGACTTGAGATCGGGAGAGGTTAGAGGTACTCCCAGGGTAGAGGTGAAATTCTGTAATCCTGGGAGGACCGCCTGTGGCGAAGGCGTCTAGCTGGAACGATTCTGCCGGTGAGGGACGAAAGCTAGGGGCGCGAACCGGATTAGATACCCGGGTAGTCCTAGCTGTAAACGATGCGGACTTGGTGTTGGGATGGCTTTGAGCTGCTCCAGTGCCGAAGGGAAGCTGTTAAGTCCGCCGCCTGGGAAGTACGGTCGCAAGACTGAAACTTAAAGGAATTGGCGGGGGAGCACCACAACGCGTGGAGCCTGCGGTTTAATTGGATTCAACGCCGGACATCTCACCAGAGGCGACAGCTGTATGATGACCAGTTTGATGAGCTTGTTTGACTAGCTGAGAGGAGGTGCATGGCCGCCGTCAGCTCGTACCGTGAGGCGTCCTGTTAAGTCAGGCAACGAGCGAGACCCACGCCCTTAGTTACCAGCGGATTCTAGTGAATGCCGGGCACACTAGGGGGACCGCCTGTGATAAATAGGAGGAAGGAGTGGACGACGGTAGGTCCGTATGCCCCGAATCCTCTGGGCAACACGCGGGCTACAATGGATGAGACAATGGGTTCCGACGCCGAAAGGTGGAGGTAATCCTCTAAACTTATTCGTAGTTCGGATTGAGGACTGTAACTCGTTCTCATGAAGCTGGAATGCGTAGTAATCGCGTGTCATAATCGCGCGGTGAATACGTCCCTGCTCCTTGGACACACCGCCCGTCACG"
 gg_id_86_pynast_seq = "-----------------------------------------------------------------------------------------------------------------------------------------GC-T-AC-T-GC--TAT-T--G-GG-ATTC--GA---T-T--AAGCCA-T-NC-A-AGT-TGA-A-CGA---------A-T------------------------------------------------------------------------------------------------TTA-GA---------------------------------------------------------------------------------------------------------------------TT--CG-T-GG-C-GT-A--C-------------GGC-TCAGT-A--AC-AC-G-T-G-GA---TAA--C-CT-A--C-C-CTT--AG-G------------------------------------------------------------------A-CT----GGG-AT-AA-CTC-------------------------T-G-G-----------------------GAA-A---CTG-GGG-ATAA-TA---CC-G--G-AT-A---------------------------------G--G-C-A--A--T-----------------TT-TTCC-T-----------------------------------------------------------------------------------------------------------------------G-TA-A--------------------------------------------------------------------------------------------------------------------------------------T-G-GT-T-T---------------T--T-T-G-T-T-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TAAATGTTTT---------------------------------------------------------------------------------------------------------------------------------------TTT-T----------------------------------------------------------------------------------------------------------------------------------C-----G--------------C----C-T---A-AG-G---AT---G-G-----G-TCT-GCG--G-CAG--A------TT--A--G-GT-A----G---TTGG-T-T-AG-G-T----AAT-GG-C-T-T-ACCA--A-GC-C-G--T-TG-A------------TCT-G-T------AC-GG-G-T-TGT-G-AG----A--GC-AA--G-AG-C-CC-GGAG-A-TGGAA--C-C-TG-A-GA-C-AA-G-G-TTCCAG-GCCC-TAC-G--G-G-G-C-GC-A-GC-A-G-GC---GC-G-A-AAC-CTCCG-C-AA-T-GT--GA-GA-A----A-T-CG-C-GA-CG-GG-GGGA-TCCC-A-AG-T---G-C-C--A--T----------T-C-T--------TA-AC-------------G-G-G--------A--T-GGC--------TT-TT-C-A--T-TAG----T------------------------------G--T--AA-A---G----A------------------------------G-C-TT-T-TG-G---------AA-----------TAAGA-GCTGGG-C--AA---G-AC-CGTT--GCCA--A-C---C--GCCG---C-GG--TA-AC--AC---CG-TC-AGC-TCT-A-G-TG-GTAG-C-AGT-TT-TT-A--T-T--GGGC-CTA----AA-GCGT-CC--G-TA-G-C-C-G------------G--T-TT-A-T-T-AA----G-T-C-T---C-TGG-TG-A-AA-TC--CT-GTA-G--------------------------------------------------------------------CT-T-AA-------------------------------------------------------------------------CT-G-T-GG-GA-AT---T-G-C-T-G-G--------A--GA-T-A-C-T-A-GTA--G-A-C---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------T-T-G-A-G-A-T-----C-GG--GA-G-A------------G-GT-T-AG-A----GG--TACT-CCC-A-GG--GT-A-GAG-GTGAAA-TT-CTG-TAAT-C-CT-G-GGA--GG-A-CC-G-CC-TG--T--G--GC-GAA-G--G-C---G----T--C-T-AGCTG------G-AA-C---------------------------------------------------------------GATT-C-T--GC--CG-----GT-GA-GG--G-A-CGA--AA-G-C--------------T-AGGG-GCG-C-G-AACC--GG-ATTA-G-ATA-C-----CC-G-G-GTA-G-T----C-CT--A-G-CTG-T-AAA--C-GATG-CG--GA-CT---------T-GG--T--G-T-TG-G-GA-T--G--GC----------------------------------------------------------------------------------TTT-GA---------------------------------------------------------------------------------------------------------------------------------------------GC---T-G-C-TC--C-A-G-T-GC-C------GA--A----GG-GAA--GC-T-G-T--T--AA-GT--C----C-GCC-GCC-T-G-GG-AAG-TA---CGG-----T-C--G-C-A-A-GAC-T--GAA-ACTT-AAA---------GGAA-TTG-GCGGG-G-G-AGCA----CCA--C-A-A-CGC-GT-G--G--AG-CC-T--GC-GGT-TT-AATT-G-G-ATT-CAAC-G-CC-G-GA-C-A-TC-TC-A-CC-AGAGG-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------CGACAGC--TGTATGATGACCAGTTTGATGAGCTTGTT-TGA-CTAGCTGAG-A-G-G-A-GGTG-CA-TGG-CC--GCC-GTC-A-GC-TC---G-TA-CC-G--TGA-GG-CGT-C-CT-G-TT-AA-GT-CAGGC-AA--------C-GAG-CGA-G-ACC-C-A-CG--CC--C-TTAG--T-T-A-C-C---AG-C-G--G--AT-TC----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TAG-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TGA---A---TG---C----C-G------------G----G---C-A--CA---------------C-T-A-G-G-GG-G--AC-C-G-CCT--G-T------------------------------------G-A---TAA----------------------------------A-T-A-G--G-A-GG-A--AGG-A--GTGG-A-CGAC-GGT--AGGT-C---CGT-A-T-G-C-C-C-CGA----AT-C--CT-C-T-GG-GC-AA-CAC-GCGGG-C--TA--CAATG---G-ATGA-G-A--C-AAT-GG-GT--------------------------------------------------------------------------------------------------T-C-C-G-A--C-GCCG-A--A---------------------------------------A-GG-T-G-----------G--A-G-GT---A----------A--TCC-T------C-T-AAACT-TA-T-T-C-G-TAG-TTC--------GGA-T-TGAGG-AC--T-GTAA-CT-C-------------------------------------------------------------------------------------------------G-TTCTC-A-T-G-AA-G-CT-GGAAT-GC-G-TA--G-TA-AT-C-G-C----GTG-TC-A-T--A------AT--CGC-GC-G-GT-G-AAT-ACGT-C-CCTGCTCCT-TGGA----CACACCG-CCC-GTC-----A---CG---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
 
 gg_id_4_ssualigned_seq = "-----------------------------------------------------------------------------------------------------------------------------------------------C-T-GC--TAT-T--G-GG-ATCC--GA---C-T--AAGCCA-T-GC-A-AGC-CCA------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------GG-C-AG-A--A-------------GGC-TCAGT-A--AC-AC-G-T-C-GC---TAA--C-CT-G--C-C-CTA--AG-G------------------------------------------------------------------T-CC----AGG-AT-AA-CCT-------------------------C-G-G-----------------------GAA-A---CTG-AGG-ATAA-TA---CT-G--G-AT-G---------------------------------G--G-G-A--A--A-----------------AG-ATAC-T-----------------------------------------------------------------------------------------------------------------------G-GA-A--------------------------------------------------------------------------------------------------------------------------------------T-G-TT-C-T---------------C--T-T-C-C-T-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TAAA------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------G--------------C----C-T---T-AG-G---AT---G-G-----G-GCG-GCG--G-CCG--A------TT--A--G-GT-T----G---TTGG-C-G-GT-G-T----AAT-GG-A-C-C-ACCA--A-GC-C-T--A-TG-A------------TCG-G-T------AC-GG-G-C-CAT-G-AG----A--GT-GG--T-AG-C-CC-GGAG-A-AGGGT--A-C-TG-A-GA-T-AC-G-G-ACCCTA-GCCC-TAC-G--G-G-G-T-GC-A-GC-A-G-GC---GC-G-A-AAC-CTCTG-C-AA-T-GC--AC-GA-A----A-G-TG-T-GA-CA-GG-GGGA-TCCC-A-AG-T---G-----------------------------------------------------------------------C--------TT-TT-G-T--C-AAG----G------------------------------G--T--AA-G---T----A------------------------------C-C-TT-G-AC-----------AA-----------TAAGC-GGTGGG-T--AA---G--C-TGGT--GCCA--G-C---C--GCCG---C-GG--TA-AC--AC---CA-GC-GCC-GCA-A-G-TG-GGGA-C-CGC-TA-TT-A--T-T--GGGC-CTA----AA-GCAT-CC--G-TA-G-C-C-G------------G--T-CA-A-A-T-AA----A-T-C-T---T-CTG-TG-A-AA-TC--GT-TCA-G--------------------------------------------------------------------CT-T-AA-------------------------------------------------------------------------CT-G-A-AC-GG------T-G-C-A-G-A--------A--GA-C-A-C-T-G-TTT--G-G-C---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------T-A-G-G-G-A-C-----C-GG--GA-G-G------------C-GT-A-AG-A----GG--TATT-CGT-A-GG--GT-A-GCG-GTAAAA-TG-CGA-TAAT-C-CT-A-CGA--AG-A-CC-A-CC-TG--T--G--GC-GAA-G--G-C---G----T--C-T-TACGA------G-AA-C---------------------------------------------------------------GGCT-C-C--GA--CG-----GT-GA-GG--G-A-TGA--AG-G-C--------------C-AGGG-GAG-C-G-AATG--GG-ATTA-G-ATA-C-----CC-C-A-GTA-G-T----C-CT--G-G-CAG-T-AAA--C-CCTG-CG--AG-CT---------A-GG--T--G-T-CG-C-GC-A--T--CC----------------------------------------------------------------------------------TCC------------------------------------------------------------------------------------------------------------------------------------------------GG---G-T-G-TG--C-G-G-T-GT-C------GT--A----GA-GAA--GT-C-G-T--T--AA-GC--T----C-GCC-GCC-T-G-GG-AAG-TA---CGG-----T-C--G-C-A-A-GGC-T--GAA-ACTT-AAA---------GGAA-TTG-GCGGG-G-G-AGCA----CTA--C-A-A-GGG-GT-G--C--GG-CG-T--GC-GGT-TT-AATT-G-G-ATT-CAAC-G-CC-G-AA-A-A-TC-TC-A-CC-AGGGG-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------AGACGGC--AGAATGAAGGTCAGTCTAAAGGGCTTACC-TGA-CGAGCCGAG-A-G-G-T-GGTG-CA-TGG-CC--GTC-GTC-A-GC-TC---G-TG-CC-G--TGA-GG-TGT-C-CT-G-TT-AA-GT-CAGGC-AA--------C-GAG-CGA-G-ACC-T-G-TG--CC--T-ACAC--T-T-G-C-C---A-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------T---------------G-T-G-T-A-GG-G--AC-T-G-CCT--G-G------------------------------------G-----AAA----------------------------------C-C-A-G--G-A-GG-A--AGG-T--ACAG-G-CAAC-GGT--AGGT-C---TGT-A-T-G-C-C-C-CGA----AT-C--CA-C-T-GG-GC-TA-CAC-GCGCG-C--AA--CAATG---G-ACGA-G-A--C-AAT-G--GC--------------------------------------------------------------------------------------------------T-G-C-A-A--C-ACCG-A--A---------------------------------------A-GG-T-G-----------A--A-G-CT---A----------A--TC-------------AAACT-CG-T-C-C-T-CAG-TAC--------GGA-T-TGAGG-CT--T-GTAA-CT-C-------------------------------------------------------------------------------------------------A-GCCTC-A-T-G-AC-G-CC-GGAAT-CC-C-TA--G-TA-AT-C-G-G----AGT-TC-A-T-C-------AT--ACT-CC-G-GT-G-AAC-ATGT-C-CCTGTTCCT-TGTT----CACACCG-CCC-GTC-----A---AA--CCA-CT-CG-A--G---CAG-G-GT-CT-GGA--T-GA-------G--G--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------T--CG--AAT-C----C-AGG-CT-CAG------------------------TG--AG------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -226,7 +284,7 @@ ncbi_tax_string=Archaea; environmental samples
 silva_tax_string=Archaea;Euryarchaeota;Thermoplasmata;Thermoplasmatales;Marine Benthic Group D and DHVEG-1
 greengenes_tax_string=k__Archaea; p__Euryarchaeota; c__Thermoplasmata; o__E2; f__DHVEG-1; g__; s__
 hugenholtz_tax_id=
-non_acgt_percent=0.0821693
+non_acgt_percent=0.07728
 perc_ident_to_invariant_core=99.6441
 small_gap_intrusions=
 bel3_div_ratio=
@@ -306,7 +364,7 @@ ncbi_tax_string=Archaea; Euryarchaeota; Methanobacteria; Methanobacteriales; Met
 silva_tax_string=Archaea;Euryarchaeota;Methanobacteria;Methanobacteriales;Methanobacteriaceae;Methanobrevibacter
 greengenes_tax_string=k__Archaea; p__Euryarchaeota; c__Methanobacteria; o__Methanobacteriales; f__Methanobacteriaceae; g__Methanobrevibacter; s__
 hugenholtz_tax_id=Archaea; Methanobacteria_Eury; Methanobrevibacter; Methanobrevibacter_cuticularis
-non_acgt_percent=0.0798085
+non_acgt_percent=0.074963
 perc_ident_to_invariant_core=99.2188
 small_gap_intrusions=
 bel3_div_ratio=

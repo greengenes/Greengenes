@@ -74,7 +74,7 @@ if __name__ == '__main__':
     from cogent.parse.fasta import MinimalFastaParser
     from sys import argv
 
-    masked = dict(MinimalFastaParser(open(argv[1])))
+    masked = MinimalFastaParser(open(argv[1]))
     mask = [int(c) for c in open(argv[3]).read().strip()]
 
     f = open(argv[4],'w')
