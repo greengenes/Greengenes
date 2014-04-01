@@ -55,8 +55,6 @@ FULL_GG_ORDER = ["gg_id","ncbi_acc_w_ver","ncbi_gi","db_name",
                  "unaligned_seq_id", "aligned_seq_id",
                  "pynast_aligned_seq_id"]
 
-ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
 _sql_insert_tax = """INSERT INTO taxonomy(tax_id, tax_version, tax_string)
                      VALUES (%d, '%s', '%s')"""
 _sql_insert_seq = """INSERT INTO sequence(seq_id, sequence)
@@ -333,42 +331,6 @@ class GreengenesDB(object):
             raise ValueError("Unable to query")
 
         return self.cursor.fetchone()[0]
-
-    ### can we drop?
-    def _create_tmp_sequence_table(self):
-        """ """
-        name = self._get_tmp_table_name("tmp_seq")
-        self._execute_safe(_sql_create_tmp % (name, "SEQUENCE"))
-        self.con.commit()
-
-        return name
-
-    ### can we drop?
-    def _drop_tmp_sequence_table(self, name):
-        """ """
-        if not name.startswith('tmp_'):
-            raise ValueError("%s doesn't appear to be temporary!" % name)
-
-        self._execute_safe(_sql_drop % name)
-
-        self.con.commit()
-
-    ### can we drop?
-    def _get_tmp_table_name(self, tag='tmp_'):
-        """Returns a random table name"""
-        if not tag.startswith('tmp'):
-            tag = 'tmp_' + tag
-
-        name = None
-        while name is None:
-            name = "%s_%s" % (tag, ''.join([choice(ALPHA) for i in range(5)]))
-            self.cursor.execute("""
-                SELECT table_name
-                FROM information_schema.tables
-                WHERE table_name='%s'""" % name)
-            if self.cursor.fetchall():
-                name = None
-        return name
 
     def __contains__(self, item):
         ncbi = """select ncbi_acc_w_ver
