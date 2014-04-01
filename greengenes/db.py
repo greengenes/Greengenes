@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from psycopg2 import connect, ProgrammingError, OperationalError
-from random import choice
 from gzip import open as gzopen
 from itertools import izip
 
@@ -14,44 +13,68 @@ __maintainer__ = "Daniel McDonald"
 __email__ = "mcdonadt@colorado.edu"
 __status__ = "Development"
 
-FULL_RECORD_DUMP = """SELECT gg_id,ncbi_acc_w_ver,ncbi_gi,db_name,gold_id,decision,prokmsaname,isolation_source,clone,organism,strain,specific_host,authors,title,journal,pubmed,submit_date,country,nt.tax_string AS ncbi_tax_string,st.tax_string AS silva_tax_string,gg.tax_string AS greengenes_tax_string,h.tax_string AS hugenholtz_tax_id,non_acgt_percent,perc_ident_to_invariant_core,aseq.sequence AS aligned_seq
-FROM record g
-LEFT JOIN taxonomy st ON st.tax_id=g.silva_tax_id
-LEFT JOIN taxonomy nt ON nt.tax_id=g.ncbi_tax_id
-LEFT JOIN taxonomy h ON h.tax_id=g.hugenholtz_tax_id
-LEFT JOIN taxonomy gg ON gg.tax_id=g.greengenes_tax_id
-LEFT JOIN sequence aseq ON aseq.seq_id=g.%s
-WHERE g.gg_id IN (%s)"""
+FULL_RECORD_DUMP = "SELECT gg_id,ncbi_acc_w_ver,ncbi_gi,db_name,gold_id,"\
+                   "decision,prokmsaname,isolation_source,clone,organism,"\
+                   "strain,specific_host,authors,title,journal,pubmed,"\
+                   "submit_date,country,nt.tax_string AS ncbi_tax_string,"\
+                   "st.tax_string AS silva_tax_string,"\
+                   "gg.tax_string AS greengenes_tax_string,"\
+                   "h.tax_string AS hugenholtz_tax_id,non_acgt_percent,"\
+                   "perc_ident_to_invariant_core,aseq.sequence AS aligned_seq "\
+                   "FROM record g "\
+                   "LEFT JOIN taxonomy st ON st.tax_id=g.silva_tax_id "\
+                   "LEFT JOIN taxonomy nt ON nt.tax_id=g.ncbi_tax_id "\
+                   "LEFT JOIN taxonomy h ON h.tax_id=g.hugenholtz_tax_id "\
+                   "LEFT JOIN taxonomy gg ON gg.tax_id=g.greengenes_tax_id "\
+                   "LEFT JOIN sequence aseq ON aseq.seq_id=g.%s "\
+                   "WHERE g.gg_id IN (%s)"
 
-SINGLE_RECORD = """SELECT gg_id,ncbi_acc_w_ver,ncbi_gi,db_name,gold_id,decision,prokmsaname,isolation_source,clone,organism,strain,specific_host,authors,title,journal,pubmed,submit_date,country,nt.tax_string AS ncbi_tax_string,st.tax_string AS silva_tax_string,gg.tax_string AS greengenes_tax_string,h.tax_string AS hugenholtz_tax_id,non_acgt_percent,perc_ident_to_invariant_core,ssu.sequence AS ssualign_seq, pynast.sequence AS pynast_seq, unaligned.sequence AS unaligned_seq
-FROM record g
-LEFT JOIN taxonomy st ON st.tax_id=g.silva_tax_id
-LEFT JOIN taxonomy nt ON nt.tax_id=g.ncbi_tax_id
-LEFT JOIN taxonomy h ON h.tax_id=g.hugenholtz_tax_id
-LEFT JOIN taxonomy gg ON gg.tax_id=g.greengenes_tax_id
-LEFT JOIN sequence ssu ON ssu.seq_id=g.aligned_seq_id
-LEFT JOIN sequence pynast on pynast.seq_id=g.pynast_aligned_seq_id
-LEFT JOIN sequence unaligned on unaligned.seq_id=g.unaligned_seq_id
-WHERE g.gg_id='%s' or g.ncbi_acc_w_ver='%s'"""
+SINGLE_RECORD = "SELECT gg_id,ncbi_acc_w_ver,ncbi_gi,db_name,gold_id,"\
+                "decision,prokmsaname,isolation_source,clone,organism,"\
+                "strain,specific_host,authors,title,journal,pubmed,"\
+                "submit_date,country,nt.tax_string AS ncbi_tax_string,"\
+                "st.tax_string AS silva_tax_string,"\
+                "gg.tax_string AS greengenes_tax_string,"\
+                "h.tax_string AS hugenholtz_tax_id,non_acgt_percent,"\
+                "perc_ident_to_invariant_core,ssu.sequence AS ssualign_seq,"\
+                "pynast.sequence AS pynast_seq,"\
+                "unaligned.sequence AS unaligned_seq "\
+                "FROM record g "\
+                "LEFT JOIN taxonomy st ON st.tax_id=g.silva_tax_id "\
+                "LEFT JOIN taxonomy nt ON nt.tax_id=g.ncbi_tax_id "\
+                "LEFT JOIN taxonomy h ON h.tax_id=g.hugenholtz_tax_id "\
+                "LEFT JOIN taxonomy gg ON gg.tax_id=g.greengenes_tax_id "\
+                "LEFT JOIN sequence ssu ON ssu.seq_id=g.aligned_seq_id "\
+                "LEFT JOIN sequence pn on pn.seq_id=g.pynast_aligned_seq_id "\
+                "LEFT JOIN sequence ua on ua.seq_id=g.unaligned_seq_id "\
+                "WHERE g.gg_id='%s' or g.ncbi_acc_w_ver='%s'"
 
-SINGLE_RECORD_ORDER = ['gg_id','ncbi_acc_w_ver','ncbi_gi','db_name','gold_id','decision','prokmsaname','isolation_source','clone','organism','strain','specific_host','authors','title','journal','pubmed','submit_date','country','ncbi_tax_string','silva_tax_string','greengenes_tax_string','hugenholtz_tax_id','non_acgt_percent','perc_ident_to_invariant_core','ssualign_seq','pynast_seq','unaligned_seq']
+SINGLE_RECORD_ORDER = ['gg_id', 'ncbi_acc_w_ver', 'ncbi_gi', 'db_name',
+                       'gold_id', 'decision', 'prokmsaname',
+                       'isolation_source', 'clone', 'organism', 'strain',
+                       'specific_host', 'authors', 'title', 'journal',
+                       'pubmed', 'submit_date', 'country', 'ncbi_tax_string',
+                       'silva_tax_string', 'greengenes_tax_string',
+                       'hugenholtz_tax_id', 'non_acgt_percent',
+                       'perc_ident_to_invariant_core', 'ssualign_seq',
+                       'pynast_seq', 'unaligned_seq']
 
-FULL_RECORD_ORDER = ["gg_id","ncbi_acc_w_ver","ncbi_gi","db_name",
-                     "gold_id","decision","prokmsaname","isolation_source",
-                     "clone","organism","strain","specific_host","authors",
-                     "title","journal","pubmed","submit_date","country",
-                     "ncbi_tax_string","silva_tax_string",
-                     "greengenes_tax_string","hugenholtz_tax_id",
-                     "non_acgt_percent","perc_ident_to_invariant_core",
+FULL_RECORD_ORDER = ["gg_id", "ncbi_acc_w_ver", "ncbi_gi", "db_name",
+                     "gold_id", "decision", "prokmsaname", "isolation_source",
+                     "clone", "organism", "strain", "specific_host", "authors",
+                     "title", "journal", "pubmed", "submit_date", "country",
+                     "ncbi_tax_string", "silva_tax_string",
+                     "greengenes_tax_string", "hugenholtz_tax_id",
+                     "non_acgt_percent", "perc_ident_to_invariant_core",
                      "aligned_seq"]
 
-FULL_GG_ORDER = ["gg_id","ncbi_acc_w_ver","ncbi_gi","db_name",
-                 "gold_id","decision","prokmsaname","isolation_source",
-                 "clone","organism","strain","specific_host","authors",
-                 "title","journal","pubmed","submit_date","country",
-                 "ncbi_tax_id","silva_tax_id",
-                 "greengenes_tax_id","hugenholtz_tax_id",
-                 "non_acgt_percent","perc_ident_to_invariant_core",
+FULL_GG_ORDER = ["gg_id", "ncbi_acc_w_ver", "ncbi_gi", "db_name",
+                 "gold_id", "decision", "prokmsaname", "isolation_source",
+                 "clone", "organism", "strain", "specific_host", "authors",
+                 "title", "journal", "pubmed", "submit_date", "country",
+                 "ncbi_tax_id", "silva_tax_id",
+                 "greengenes_tax_id", "hugenholtz_tax_id",
+                 "non_acgt_percent", "perc_ident_to_invariant_core",
                  "unaligned_seq_id", "aligned_seq_id",
                  "pynast_aligned_seq_id"]
 
@@ -63,25 +86,19 @@ _sql_update_rec = """UPDATE record
                      SET %s=%s
                      WHERE gg_id=%d"""
 _sql_insert_otu_cluster = """
-                 INSERT INTO otu_cluster(cluster_id, rep_id, similarity, method)
-                 VALUES (%d, %d, %f, '%s')"""
+               INSERT INTO otu_cluster(cluster_id, rep_id, similarity, method)
+               VALUES (%d, %d, %f, '%s')"""
 _sql_insert_otu = """INSERT INTO otu(cluster_id, gg_id)
                      VALUES (%d, %d)"""
 _sql_create_tmp = "CREATE TEMPORARY TABLE %s LIKE %s"""
-_sql_drop =       "DROP TABLE %s"
+_sql_drop = "DROP TABLE %s"
 _sql_insert_rec = "INSERT INTO record (%s) VALUES (%s)"
 _sql_insert_rel = "INSERT INTO gg_release (gg_id,name) VALUES (%d, '%s')"
 _sql_select_relids = "SELECT gg_id FROM gg_release WHERE name='%s'"
 _sql_set_search_path = "SET search_path TO %s"
 
-#__sql_select_rec = "SELECT %s FROM greengenes" % (",".join(FULL_GG_ORDER))
-#_sql_select_rec_ggid = __sql_select_rec + " WHERE gg_id=%d"
-#_sql_select_rec_ncbi = __sql_select_rec + " WHERE ncbi_acc_w_ver=%d"
-#_sql_select_rec_both = __sql_select_rec + """ WHERE gg_id='%s' OR
-#                                                ncbi_acc_w_ver='%s'"""
 
 class GreengenesDB(object):
-
     def __init__(self, host='localhost', user='ggadmin', passwd='',
                  debug=False, database='greengenes'):
         self.con = connect(host=host, user=user, password=passwd,
@@ -100,14 +117,15 @@ class GreengenesDB(object):
         del self.con
 
     def _set_development_schema(self):
+        """Set development schema"""
         self._execute_safe(_sql_set_search_path % "development")
 
     def _set_production_schema(self):
+        """Set production schema"""
         self._execute_safe(_sql_set_search_path % "production")
 
-    def bulkFetchARBRecords(self, ids, aln_seq_field, directio_basename=None,
-                            size=10000):
-        """Bulk fetch ARB records
+    def to_arb(self, ids, aln_seq_field, directio_basename=None, size=10000):
+        """Fetch ARB records
 
         If direct IO, data written direct to file(s). Data are written gzip'd,
         and spread over multiple files. directio_basename is the base
@@ -155,15 +173,15 @@ class GreengenesDB(object):
         else:
             return []
 
-    def updateGreengenesTaxonomy(self, tax_map, version):
+    def update_greengenes_tax(self, tax_map, version):
         """Update Greengenes taxonomy fields"""
-        self._update_tax_field('greengenes_tax_id', tax_map, version)
+        self._update_tax('greengenes_tax_id', tax_map, version)
 
-    def updateNCBITaxonomy(self, tax_map, version='NA'):
+    def update_ncbi_tax(self, tax_map, version='NA'):
         """Update NCBI taxonomy fields"""
-        self._update_tax_field('ncbi_tax_id', tax_map, version)
+        self._update_tax('ncbi_tax_id', tax_map, version)
 
-    def _update_tax_field(self, col, taxmap, version):
+    def _update_tax(self, col, taxmap, version):
         """Insert taxonomy records, update greengenes records"""
         tax_id = self._get_max_taxid() + 1
         for gg_id, tax in taxmap.iteritems():
@@ -178,21 +196,20 @@ class GreengenesDB(object):
 
         self.con.commit()
 
-    def getReleaseGGIDs(self, name):
-        """Return the IDs associated with a release name"""
+    def get_release(self, name):
+        """Return the GG IDs associated with a release name"""
         self._execute_safe(_sql_select_relids % name)
         return [i[0] for i in self.cursor.fetchall()]
 
-    def getNCBITaxonomyMultipleGGID(self, ggids):
+    def get_ncbi_tax_multiple(self, ggids):
         """Query multiple GGIDs at a time"""
-        return self._get_multiple_taxonomy_strings_ggid('ncbi_tax_id', ggids)
+        return self._get_multiple_tax('ncbi_tax_id', ggids)
 
-    def getGreengenesTaxonomyMultipleGGID(self, ggids):
+    def get_greengenes_tax_multiple(self, ggids):
         """Query multiple GGIDs at a time"""
-        return self._get_multiple_taxonomy_strings_ggid('greengenes_tax_id',
-                                                        ggids)
+        return self._get_multiple_tax('greengenes_tax_id', ggids)
 
-    def _get_multiple_taxonomy_strings_ggid(self, field, ggids):
+    def _get_multiple_tax(self, field, ggids):
         """Get multiple taxonomy strings by GGIDs"""
         res = dict([(int(i), None) for i in ggids])
         ggids = ",".join(map(str, ggids))
@@ -208,15 +225,15 @@ class GreengenesDB(object):
         res.update(dict(self.cursor.fetchall()))
         return res
 
-    def getNCBITaxonomySingleGGID(self, ggid):
+    def get_ncbi_tax(self, ggid):
         """Get a taxonomy string by GGID"""
-        return self._get_single_taxonomy_string_ggid("ncbi_tax_id", ggid)
+        return self._get_single_tax("ncbi_tax_id", ggid)
 
-    def getGreengenesTaxonomySingleGGID(self, ggid):
+    def get_greengenes_tax(self, ggid):
         """Get a taxonomy string by GGID"""
-        return self._get_single_taxonomy_string_ggid("greengenes_tax_id", ggid)
+        return self._get_single_tax("greengenes_tax_id", ggid)
 
-    def _get_single_taxonomy_string_ggid(self, field, ggid):
+    def _get_single_tax(self, field, ggid):
         """Get a single taxonomy string by ggid"""
         try:
             self.cursor.execute("""
@@ -233,19 +250,19 @@ class GreengenesDB(object):
         else:
             return res[0]
 
-    def getPyNASTSequenceGGID(self, gg_id):
+    def get_pynast_seq(self, gg_id):
         """Get a single PyNAST sequence by GG_ID"""
-        return self._get_sequence_gg_id("pynast_aligned_seq_id", gg_id)
+        return self._get_seq("pynast_aligned_seq_id", gg_id)
 
-    def getSSUAlignSequenceGGID(self, gg_id):
+    def get_ssualign_seq(self, gg_id):
         """Get a single SSU Align sequence by GG_ID"""
-        return self._get_sequence_gg_id("aligned_seq_id", gg_id)
+        return self._get_seq("aligned_seq_id", gg_id)
 
-    def getUnalignedSequenceGGID(self, gg_id):
+    def get_unaligned_seq(self, gg_id):
         """Get a single unaligned sequence by GG_ID"""
-        return self._get_sequence_gg_id("unaligned_seq_id", gg_id)
+        return self._get_seq("unaligned_seq_id", gg_id)
 
-    def _get_sequence_gg_id(self, field, gg_id):
+    def _get_seq(self, field, gg_id):
         """Get a sequence by GG ID
 
         Returns None if not found or GG_ID doesn't exist
@@ -254,7 +271,8 @@ class GreengenesDB(object):
             n = self.cursor.execute("""SELECT s.sequence
                                        FROM record g INNER JOIN
                                             sequence s ON g.%s=s.seq_id
-                                       WHERE g.gg_id=%d""" %(field,int(gg_id)))
+                                       WHERE g.gg_id=%d""" %
+                                    (field, int(gg_id)))
         except ProgrammingError:
             return None
 
@@ -263,7 +281,7 @@ class GreengenesDB(object):
         else:
             return self.cursor.fetchone()[0]
 
-    def _update_seq_field(self, seqs, col):
+    def _update_seq(self, seqs, col):
         """update greengenes record"""
         seq_id = self._get_max_seqid() + 1
         for gg_id, seq in seqs.items():
@@ -275,17 +293,17 @@ class GreengenesDB(object):
 
         self.con.commit()
 
-    def updatePyNASTSequences(self, seqs):
+    def update_pynast_seq(self, seqs):
         """seqs -> {gg_id:sequence}"""
-        self._update_seq_field(seqs, "pynast_aligned_seq_id")
+        self._update_seq(seqs, "pynast_aligned_seq_id")
 
-    def updateSSUAlignSequences(self, seqs):
+    def update_ssualign_seq(self, seqs):
         """seqs -> {gg_id:sequence}"""
-        self._update_seq_field(seqs, "aligned_seq_id")
+        self._update_seq(seqs, "aligned_seq_id")
 
-    def updateUnalignedSequences(self, seqs):
+    def update_unaligned_seq(self, seqs):
         """seqs -> {gg_id:sequence}"""
-        self._update_seq_field(seqs, "unaligned_seq_id")
+        self._update_seq(seqs, "unaligned_seq_id")
 
     def _get_max_otu_cluster_id(self):
         """Returns the max observed OTU cluster ID"""
@@ -357,6 +375,7 @@ class GreengenesDB(object):
             return False
 
     def _execute_safe(self, sql):
+        """Execute and roll back if we hit an error"""
         try:
             self.cursor.execute(sql)
         except ProgrammingError:
@@ -366,19 +385,20 @@ class GreengenesDB(object):
             self.con.rollback()
             raise ValueError("Bad value in:\n%s!" % sql)
 
-    def _build_rec(self, dbrec):
+    @staticmethod
+    def _build_rec(dbrec):
         """Rebuild a record from db select results"""
         return {k: v for k, v in izip(SINGLE_RECORD_ORDER, dbrec)}
 
-    def selectRecord(self, id_):
-        """Return a record from the db"""
+    def select_record(self, id_):
+        """Return a record from the db by greengenes id"""
         if id_ not in self:
             raise ValueError("%d doesn't appear in the db!" % id_)
 
         self._execute_safe(SINGLE_RECORD % (id_, id_))
         return self._build_rec(self.cursor.fetchone())
 
-    def insertSequence(self, seq):
+    def insert_sequence(self, seq):
         """Load a sequence, return seq_id"""
         seq_id = self._get_max_seqid() + 1
 
@@ -387,7 +407,7 @@ class GreengenesDB(object):
         self.con.commit()
         return seq_id
 
-    def insertTaxonomy(self, tax, tax_version):
+    def insert_taxonomy(self, tax, tax_version):
         """Load a taxonomy string, return tax_id"""
 
         tax_id = self._get_max_taxid() + 1
@@ -397,7 +417,7 @@ class GreengenesDB(object):
         self.con.commit()
         return tax_id
 
-    def insertRecord(self, record, releasename="in_holding"):
+    def insert_record(self, record, releasename="in_holding"):
         """Insert a Greengenes record"""
         if record['ncbi_acc_w_ver'] in self:
             raise ValueError("record %s exists!" % record['ncbi_acc_w_ver'])
@@ -425,7 +445,7 @@ class GreengenesDB(object):
 
         return ggid
 
-    def insertOTU(self, rep, members, method, similarity):
+    def insert_otu(self, rep, members, method, similarity):
         """Insert an OTU
 
         rep : a gg_id
@@ -446,20 +466,6 @@ class GreengenesDB(object):
 
         self.con.commit()
 
-    def release(self, prior_version, tmp_table='in_holding', thresholds=None):
-        """Yield sequences tagged by decision type
-
-        """
-        if thresholds is not None:
-            # expects [(column_name, op, value)]
-            criteria = [op.join([c,v]) for c,op,v in thresholds]
-            filter_criteria = " AND %s " % ' AND '.join(criteria)
-        else:
-            filter_criteria = ""
-
-        #self._execute_safe(_sql_release_ni % (tmp_table, filter_criteria))
-        #return (i for i in self.db.cursor.fetchall()):
-
     def _create_db(self, schema='development'):
         """Create a small test database"""
         self.cursor.execute("DROP TABLE IF EXISTS %s.otu" % schema)
@@ -469,7 +475,6 @@ class GreengenesDB(object):
         self.cursor.execute("DROP TABLE IF EXISTS %s.record" % schema)
         self.cursor.execute("DROP TABLE IF EXISTS %s.taxonomy" % schema)
         self.cursor.execute("DROP TABLE IF EXISTS %s.sequence" % schema)
-
 
         self.cursor.execute("""
             CREATE TABLE %s.taxonomy(
@@ -570,6 +575,7 @@ class GreengenesDB(object):
         self.con.commit()
 
     def _populate_debug_db(self):
+        """Source a subset from production db"""
         self.cursor.execute("""INSERT INTO development.sequence
                                SELECT s.seq_id,s.sequence
                                FROM production.record g

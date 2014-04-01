@@ -19,69 +19,69 @@ class GGDBTests(TestCase):
     def tearDown(self):
         del self.db
 
-    def test_updateGreengenesTaxonomy(self):
+    def test_update_greengenes_tax(self):
         """Update Greengenes taxonomy strings"""
         taxmap = {86:"foo bar", 3:'yay number 3', '4':'slightly malformed id',
                   57:None}
         exp = dict([(int(k), v) for k,v in taxmap.items()])
-        self.db.updateGreengenesTaxonomy(taxmap, "TESTING")
-        obs = self.db.getGreengenesTaxonomyMultipleGGID([86,3,4,57])
+        self.db.update_greengenes_tax(taxmap, "TESTING")
+        obs = self.db.get_greengenes_tax_multiple([86,3,4,57])
         self.assertEqual(obs,exp)
 
-    def test_updateNCBITaxonomy(self):
+    def test_update_ncbi_tax(self):
         """Update NCBI taxonomy strings"""
         taxmap = {86:"foo bar", 3:'yay number 3', '4':'slightly malformed id',
                   57:None}
         exp = dict([(int(k), v) for k,v in taxmap.items()])
-        self.db.updateNCBITaxonomy(taxmap, "TESTING")
-        obs = self.db.getNCBITaxonomyMultipleGGID([86,3,4,57])
+        self.db.update_ncbi_tax(taxmap, "TESTING")
+        obs = self.db.get_ncbi_tax_multiple([86,3,4,57])
         self.assertEqual(obs,exp)
 
-    def test_update_taxonomy(self):
+    def test_update_tax(self):
         """implicitly tested by other taxonomy update methods"""
         pass
 
-    def test_getGreengenesTaxononmySingleGGID(self):
+    def test_get_greengenes_tax(self):
         """Get a Greengenes taxonomy string by GGID"""
         exp_86 = "k__Archaea; p__Euryarchaeota; c__Methanobacteria; o__Methanobacteriales; f__Methanobacteriaceae; g__Methanobrevibacter; s__"
         exp_3 = None
         exp_4 = "k__Archaea; p__[Parvarchaeota]; c__[Parvarchaea]; o__YLA114; f__; g__; s__"
 
-        obs_86 = self.db.getGreengenesTaxonomySingleGGID(86)
-        obs_3 = self.db.getGreengenesTaxonomySingleGGID(3)
-        obs_4 = self.db.getGreengenesTaxonomySingleGGID(4)
+        obs_86 = self.db.get_greengenes_tax(86)
+        obs_3 = self.db.get_greengenes_tax(3)
+        obs_4 = self.db.get_greengenes_tax(4)
 
         self.assertEqual(obs_86, exp_86)
         self.assertEqual(obs_3, exp_3)
         self.assertEqual(obs_4, exp_4)
 
-    def test_getGreengenesTaxonomyMultipleGGID(self):
+    def test_get_greengenes_tax_multiple(self):
         """Get multiple taxonomy strings by GGIDs"""
         exp = {3:None,4:"k__Archaea; p__[Parvarchaeota]; c__[Parvarchaea]; o__YLA114; f__; g__; s__",
                86:"k__Archaea; p__Euryarchaeota; c__Methanobacteria; o__Methanobacteriales; f__Methanobacteriaceae; g__Methanobrevibacter; s__"}
-        obs = self.db.getGreengenesTaxonomyMultipleGGID([3,4,86])
+        obs = self.db.get_greengenes_tax_multiple([3,4,86])
         self.assertEqual(obs, exp)
 
-    def test_getNCBITaxonomySingleGGID(self):
+    def test_get_ncbi_tax(self):
         """Get a NCBI taxonomy string by GGID"""
         exp_3 = "Archaea; Euryarchaeota; Methanococci; Methanococcales; Methanocaldococcaceae; Methanocaldococcus"
         exp_4 = "Archaea; environmental samples"
         exp_86 = "Archaea; Euryarchaeota; Methanobacteria; Methanobacteriales; Methanobacteriaceae; Methanobrevibacter"
 
-        obs_3 = self.db.getNCBITaxonomySingleGGID(3)
-        obs_4 = self.db.getNCBITaxonomySingleGGID(4)
-        obs_86 = self.db.getNCBITaxonomySingleGGID(86)
+        obs_3 = self.db.get_ncbi_tax(3)
+        obs_4 = self.db.get_ncbi_tax(4)
+        obs_86 = self.db.get_ncbi_tax(86)
 
         self.assertEqual(obs_3, exp_3)
         self.assertEqual(obs_4, exp_4)
         self.assertEqual(obs_86, exp_86)
 
-    def test_getNCBITaxonomyMultipleGGID(self):
+    def test_get_ncbi_tax_multiple(self):
         """Get multiple NCBI taxonomy strings by GGID"""
         exp = {3:"Archaea; Euryarchaeota; Methanococci; Methanococcales; Methanocaldococcaceae; Methanocaldococcus",
                4:"Archaea; environmental samples",
                86:"Archaea; Euryarchaeota; Methanobacteria; Methanobacteriales; Methanobacteriaceae; Methanobrevibacter"}
-        obs = self.db.getNCBITaxonomyMultipleGGID([3,4,86])
+        obs = self.db.get_ncbi_tax_multiple([3,4,86])
         self.assertEqual(obs, exp)
 
     def test_get_multiple_taxonomy_string_ggid(self):
@@ -92,47 +92,47 @@ class GGDBTests(TestCase):
         """implicitly tested by other taxonomy getters"""
         pass
 
-    def test_bulkFetchARBRecords(self):
+    def test_to_arb(self):
         """Bulk fetch records for ARB import"""
         ids = [86,79,50]
         exp = [e for e in example_arb_recs.splitlines() if e]
-        obs = self.db.bulkFetchARBRecords(ids, "aligned_seq_id")
+        obs = self.db.to_arb(ids, "aligned_seq_id")
         obs = [o.strip() for o in obs if o.strip()]
 
         self.assertEqual(sorted(obs), sorted(exp))
 
-    def test_getPyNASTSequenceGGID(self):
+    def test_get_pynast_seq(self):
         """Get a single PyNAST sequence by GG_ID"""
         exp = gg_id_86_pynast_seq
-        obs = self.db.getPyNASTSequenceGGID(86)
+        obs = self.db.get_pynast_seq(86)
         self.assertEqual(obs,exp)
 
-    def test_getSSUAlignSequenceGGID(self):
+    def test_get_ssualign_seq(self):
         """Get a single SSU Align sequence by GG_ID"""
         exp = gg_id_4_ssualigned_seq
-        obs = self.db.getSSUAlignSequenceGGID(4)
+        obs = self.db.get_ssualign_seq(4)
         self.assertEqual(obs, exp)
 
-    def test_getUnalignedSequenceGGID(self):
+    def test_get_unaligned_seq(self):
         exp = gg_id_86_unaligned_seq
-        obs = self.db.getUnalignedSequenceGGID(86)
+        obs = self.db.get_unaligned_seq(86)
         self.assertEqual(obs, exp)
 
-    def test_insertSequence(self):
+    def test_insert_sequence(self):
         exp_seq = "AATTGGCC"
         exp_id = self.db._get_max_seqid() + 1
-        obs_id = self.db.insertSequence(exp_seq)
+        obs_id = self.db.insert_sequence(exp_seq)
         self.db.cursor.execute("select sequence from sequence where seq_id=%d"\
                 % exp_id)
         obs_seq = self.db.cursor.fetchone()[0]
         self.assertEqual(obs_id, exp_id)
         self.assertEqual(obs_seq, exp_seq)
 
-    def test_insertTaxonomy(self):
+    def test_insert_taxonomy(self):
         exp_tax = "a; b; c"
         exp_name = "TEST"
         exp_id = self.db._get_max_taxid() + 1
-        obs_id = self.db.insertTaxonomy(exp_tax, exp_name)
+        obs_id = self.db.insert_taxonomy(exp_tax, exp_name)
         self.db.cursor.execute("""select tax_string, tax_version
                                   from taxonomy where tax_id=%d""" % exp_id)
         obs_tax, obs_name = self.db.cursor.fetchone()
@@ -140,12 +140,12 @@ class GGDBTests(TestCase):
         self.assertEqual(obs_tax, exp_tax)
         self.assertEqual(obs_name, exp_name)
 
-    def test_insertRecord(self):
+    def test_insert_record(self):
         exp_id = self.db._get_max_ggid() + 1
         exp_rec = {'ncbi_acc_w_ver': 'test',
                    'decision':'test_dec'}
         exp_name = "test_name"
-        obs_id = self.db.insertRecord(exp_rec.copy(), exp_name)
+        obs_id = self.db.insert_record(exp_rec.copy(), exp_name)
 
         self.db.cursor.execute("""
                 select ncbi_acc_w_ver, decision
@@ -162,8 +162,8 @@ class GGDBTests(TestCase):
         self.assertEqual(obs_rec, exp_rec)
         self.assertEqual(obs_name, exp_name)
 
-    def test_insertOTU(self):
-        self.db.insertOTU(49, [40,7,32], 'test', 0.123)
+    def test_insert_otu(self):
+        self.db.insert_otu(49, [40,7,32], 'test', 0.123)
         self.db.cursor.execute("select * from otu_cluster")
         exp = (1, 49, 0.123, 'test')
         obs = self.db.cursor.fetchall()[0]
@@ -188,14 +188,14 @@ class GGDBTests(TestCase):
         # as of gg_13_5...
         self.assertEqual(self.db._get_max_taxid(), 7558683)
 
-    def test_updatePyNASTSequences(self):
+    def test_update_pynast_seq(self):
         """Update the seqs"""
         self.db.cursor.execute('select gg_id from record where pynast_aligned_seq_id is null')
         ggids = [str(i[0]) for i in self.db.cursor.fetchall()]
         self.assertNotEqual(len(ggids), 0)
 
         seqs = dict([(i,'ATGC_%s' % i) for i in ggids])
-        self.db.updatePyNASTSequences(seqs)
+        self.db.update_pynast_seq(seqs)
 
         exp = seqs
         obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
@@ -205,14 +205,14 @@ class GGDBTests(TestCase):
         obs = dict([(str(id_), seq) for id_, seq in self.db.cursor.fetchall()])
         self.assertEqual(obs,exp)
 
-    def test_updateSSUAlignSequences(self):
+    def test_update_ssualign_seq(self):
         """Update the seqs"""
         self.db.cursor.execute('select gg_id from record where aligned_seq_id is null')
         ggids = [str(i[0]) for i in self.db.cursor.fetchall()]
         self.assertNotEqual(len(ggids), 0)
 
         seqs = dict([(i,'ATGC_%s' % i) for i in ggids])
-        self.db.updateSSUAlignSequences(seqs)
+        self.db.update_ssualign_seq(seqs)
 
         exp = seqs
         obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
@@ -222,14 +222,14 @@ class GGDBTests(TestCase):
         obs = dict([(str(id_), seq) for id_, seq in self.db.cursor.fetchall()])
         self.assertEqual(obs,exp)
 
-    def test_updateUnlignedSequences(self):
+    def test_update_unaligned_seq(self):
         """Update the seqs"""
         self.db.cursor.execute('select gg_id from record where unaligned_seq_id is null')
         ggids = [str(i[0]) for i in self.db.cursor.fetchall()]
         self.assertNotEqual(len(ggids), 0)
 
         seqs = dict([(i,'ATGC_%s' % i) for i in ggids])
-        self.db.updateUnalignedSequences(seqs)
+        self.db.update_unaligned_seq(seqs)
 
         exp = seqs
         obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
