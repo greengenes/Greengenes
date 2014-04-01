@@ -94,6 +94,8 @@ class GreengenesDB(object):
             self._set_development_schema()
             self._create_db()
             self._populate_debug_db()
+        else:
+            self._set_production_schema()
 
     def __del__(self):
         del self.cursor
@@ -101,6 +103,9 @@ class GreengenesDB(object):
 
     def _set_development_schema(self):
         self._execute_safe(_sql_set_search_path % "development")
+
+    def _set_production_schema(self):
+        self._execute_safe(_sql_set_search_path % "production")
 
     def bulkFetchARBRecords(self, ids, aln_seq_field, directio_basename=None,
                             size=10000):
