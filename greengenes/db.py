@@ -211,7 +211,7 @@ class GreengenesDB(object):
 
     def _get_multiple_tax(self, field, ggids):
         """Get multiple taxonomy strings by GGIDs"""
-        res = dict([(int(i), None) for i in ggids])
+        res = {int(i): None for i in ggids}
         ggids = ",".join(map(str, ggids))
         try:
             self.cursor.execute("""
