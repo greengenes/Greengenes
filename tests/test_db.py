@@ -163,14 +163,14 @@ class GGDBTests(TestCase):
         self.assertEqual(obs_name, exp_name)
 
     def test_insert_otu(self):
-        self.db.insert_otu(49, [40,7,32], 'test', 0.123)
+        self.db.insert_otu(49, [13,7,32], 'test', 0.123, '13_5')
         self.db.cursor.execute("select * from otu_cluster")
-        exp = (1, 49, 0.123, 'test')
+        exp = (1, 49, 2150456, 0.123, 'test')
         obs = self.db.cursor.fetchall()[0]
         self.assertEqual(obs, exp)
 
         self.db.cursor.execute("select * from otu")
-        exp = [(1, 1, 40), (2, 1, 7), (3, 1, 32), (4, 1, 49)]
+        exp = [(1, 1, 13), (2, 1, 7), (3, 1, 32), (4, 1, 49)]
         obs = self.db.cursor.fetchall()
         self.assertEqual(sorted(obs), exp)
 

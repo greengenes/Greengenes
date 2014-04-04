@@ -86,8 +86,9 @@ _sql_update_rec = """UPDATE record
                      SET %s=%s
                      WHERE gg_id=%d"""
 _sql_insert_otu_cluster = """
-               INSERT INTO otu_cluster(cluster_id, rep_id, similarity, method)
-               VALUES (%d, %d, %f, '%s')"""
+               INSERT INTO otu_cluster(cluster_id, rep_id, rel_id, similarity,
+                                       method)
+               VALUES (%d, %d, %d, %f, '%s')"""
 _sql_insert_otu = """INSERT INTO otu(cluster_id, gg_id)
                      VALUES (%d, %d)"""
 _sql_create_tmp = "CREATE TEMPORARY TABLE %s LIKE %s"""
@@ -95,6 +96,9 @@ _sql_drop = "DROP TABLE %s"
 _sql_insert_rec = "INSERT INTO record (%s) VALUES (%s)"
 _sql_insert_rel = "INSERT INTO gg_release (gg_id,name) VALUES (%d, '%s')"
 _sql_select_relids = "SELECT gg_id FROM gg_release WHERE name='%s'"
+_sql_select_relid = """SELECT rel_id
+                       FROM gg_release
+                       WHERE gg_id=%d AND name='%s'"""
 _sql_set_search_path = "SET search_path TO %s"
 
 
@@ -113,6 +117,8 @@ class GreengenesDB(object):
             self._set_production_schema()
 
     def __del__(self):
+        self.cursor.close()
+        self.con.close()
         del self.cursor
         del self.con
 
@@ -445,20 +451,29 @@ class GreengenesDB(object):
 
         return ggid
 
-    def insert_otu(self, rep, members, method, similarity):
+    def insert_otu(self, rep_id, members, method, similarity, rel_name):
         """Insert an OTU
 
-        rep : a gg_id
+        rep_id : a gg_id
+        rel_name : a release name
         members : a list of gg_id
         method : a string < 16 bytes
         similarity : a float
         """
-        if rep not in members:
-            members.append(rep)
+        if rep_id not in members:
+            members.append(rep_id)
+
+        self._execute_safe(_sql_select_relid % (rep_id, rel_name))
+        rel_id = self.cursor.fetchone()[0]
+
+        if rel_id is None:
+            raise ValueError("%d doesn't appear to be in %s" %
+                             (rep_id, rel_name))
 
         c_id = self._get_max_otu_cluster_id() + 1
 
-        sql = _sql_insert_otu_cluster % (c_id, rep, similarity, method)
+        sql = _sql_insert_otu_cluster % (c_id, rep_id, rel_id, similarity,
+                                         method)
         self._execute_safe(sql)
 
         for member in members:
@@ -547,10 +562,12 @@ class GreengenesDB(object):
         self.cursor.execute("""CREATE TABLE %s.otu_cluster (
             cluster_id INT NOT NULL,
             rep_id INT NOT NULL,
+            rel_id INT NOT NULL,
             similarity FLOAT NOT NULL,
             method VARCHAR(16),
             PRIMARY KEY(cluster_id),
-            FOREIGN KEY(rep_id) REFERENCES record(gg_id)
+            FOREIGN KEY(rep_id) REFERENCES record(gg_id),
+            FOREIGN KEY(rel_id) REFERENCES gg_release(rel_id)
             )""" % schema)
         self.con.commit()
 
