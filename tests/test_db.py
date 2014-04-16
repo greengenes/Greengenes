@@ -15,6 +15,7 @@ __status__ = "Development"
 class GGDBTests(TestCase):
     def setUp(self):
         self.db = GreengenesDB(debug=True)
+        self.cursor = self.db.con.cursor()
 
     def tearDown(self):
         del self.db
@@ -122,9 +123,9 @@ class GGDBTests(TestCase):
         exp_seq = "AATTGGCC"
         exp_id = self.db._get_max_seqid() + 1
         obs_id = self.db.insert_sequence(exp_seq)
-        self.db.cursor.execute("select sequence from sequence where seq_id=%d"\
+        self.cursor.execute("select sequence from sequence where seq_id=%d"\
                 % exp_id)
-        obs_seq = self.db.cursor.fetchone()[0]
+        obs_seq = self.cursor.fetchone()[0]
         self.assertEqual(obs_id, exp_id)
         self.assertEqual(obs_seq, exp_seq)
 
@@ -133,9 +134,9 @@ class GGDBTests(TestCase):
         exp_name = "TEST"
         exp_id = self.db._get_max_taxid() + 1
         obs_id = self.db.insert_taxonomy(exp_tax, exp_name)
-        self.db.cursor.execute("""select tax_string, tax_version
+        self.cursor.execute("""select tax_string, tax_version
                                   from taxonomy where tax_id=%d""" % exp_id)
-        obs_tax, obs_name = self.db.cursor.fetchone()
+        obs_tax, obs_name = self.cursor.fetchone()
         self.assertEqual(obs_id, exp_id)
         self.assertEqual(obs_tax, exp_tax)
         self.assertEqual(obs_name, exp_name)
@@ -147,16 +148,16 @@ class GGDBTests(TestCase):
         exp_name = "test_name"
         obs_id = self.db.insert_record(exp_rec.copy(), exp_name)
 
-        self.db.cursor.execute("""
+        self.cursor.execute("""
                 select ncbi_acc_w_ver, decision
                 from record
                 where gg_id=%d""" % exp_id)
-        obs_rec = self.db.cursor.fetchone()
+        obs_rec = self.cursor.fetchone()
         obs_rec = {k:v for k,v in zip(["ncbi_acc_w_ver","decision"], obs_rec)}
 
-        self.db.cursor.execute("select name from gg_release where gg_id=%d" \
+        self.cursor.execute("select name from gg_release where gg_id=%d" \
                               % exp_id)
-        obs_name = self.db.cursor.fetchone()[0]
+        obs_name = self.cursor.fetchone()[0]
 
         self.assertEqual(obs_id, exp_id)
         self.assertEqual(obs_rec, exp_rec)
@@ -164,14 +165,14 @@ class GGDBTests(TestCase):
 
     def test_insert_otu(self):
         self.db.insert_otu(49, [13,7,32], 'test', 0.123, '13_5')
-        self.db.cursor.execute("select * from otu_cluster")
+        self.cursor.execute("select * from otu_cluster")
         exp = (1, 49, 2150456, 0.123, 'test')
-        obs = self.db.cursor.fetchall()[0]
+        obs = self.cursor.fetchall()[0]
         self.assertEqual(obs, exp)
 
-        self.db.cursor.execute("select * from otu")
+        self.cursor.execute("select * from otu")
         exp = [(1, 1, 13), (2, 1, 7), (3, 1, 32), (4, 1, 49)]
-        obs = self.db.cursor.fetchall()
+        obs = self.cursor.fetchall()
         self.assertEqual(sorted(obs), exp)
 
     def test_get_sequence_ggid(self):
@@ -190,53 +191,53 @@ class GGDBTests(TestCase):
 
     def test_update_pynast_seq(self):
         """Update the seqs"""
-        self.db.cursor.execute('select gg_id from record where pynast_aligned_seq_id is null')
-        ggids = [str(i[0]) for i in self.db.cursor.fetchall()]
+        self.cursor.execute('select gg_id from record where pynast_aligned_seq_id is null')
+        ggids = [str(i[0]) for i in self.cursor.fetchall()]
         self.assertNotEqual(len(ggids), 0)
 
         seqs = dict([(i,'ATGC_%s' % i) for i in ggids])
         self.db.update_pynast_seq(seqs)
 
         exp = seqs
-        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
+        obs_cur = self.cursor.execute("""select g.gg_id, s.sequence
                                 from record g inner join sequence s
                                     on g.pynast_aligned_seq_id=s.seq_id
                                 where g.gg_id in (%s)""" % ','.join(exp.keys()))
-        obs = dict([(str(id_), seq) for id_, seq in self.db.cursor.fetchall()])
+        obs = dict([(str(id_), seq) for id_, seq in self.cursor.fetchall()])
         self.assertEqual(obs,exp)
 
     def test_update_ssualign_seq(self):
         """Update the seqs"""
-        self.db.cursor.execute('select gg_id from record where aligned_seq_id is null')
-        ggids = [str(i[0]) for i in self.db.cursor.fetchall()]
+        self.cursor.execute('select gg_id from record where aligned_seq_id is null')
+        ggids = [str(i[0]) for i in self.cursor.fetchall()]
         self.assertNotEqual(len(ggids), 0)
 
         seqs = dict([(i,'ATGC_%s' % i) for i in ggids])
         self.db.update_ssualign_seq(seqs)
 
         exp = seqs
-        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
+        obs_cur = self.cursor.execute("""select g.gg_id, s.sequence
                                 from record g inner join sequence s
                                     on g.aligned_seq_id=s.seq_id
                                 where g.gg_id in (%s)""" % ','.join(exp.keys()))
-        obs = dict([(str(id_), seq) for id_, seq in self.db.cursor.fetchall()])
+        obs = dict([(str(id_), seq) for id_, seq in self.cursor.fetchall()])
         self.assertEqual(obs,exp)
 
     def test_update_unaligned_seq(self):
         """Update the seqs"""
-        self.db.cursor.execute('select gg_id from record where unaligned_seq_id is null')
-        ggids = [str(i[0]) for i in self.db.cursor.fetchall()]
+        self.cursor.execute('select gg_id from record where unaligned_seq_id is null')
+        ggids = [str(i[0]) for i in self.cursor.fetchall()]
         self.assertNotEqual(len(ggids), 0)
 
         seqs = dict([(i,'ATGC_%s' % i) for i in ggids])
         self.db.update_unaligned_seq(seqs)
 
         exp = seqs
-        obs_cur = self.db.cursor.execute("""select g.gg_id, s.sequence
+        obs_cur = self.cursor.execute("""select g.gg_id, s.sequence
                                 from record g inner join sequence s
                                     on g.unaligned_seq_id=s.seq_id
                                 where g.gg_id in (%s)""" % ','.join(exp.keys()))
-        obs = dict([(str(id_), seq) for id_, seq in self.db.cursor.fetchall()])
+        obs = dict([(str(id_), seq) for id_, seq in self.cursor.fetchall()])
         self.assertEqual(obs,exp)
 
     def test_update_seq_field(self):

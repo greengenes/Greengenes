@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from contextlib import contextmanager
 from psycopg2 import connect, ProgrammingError, OperationalError
 from gzip import open as gzopen
 from itertools import izip
@@ -107,7 +108,6 @@ class GreengenesDB(object):
                  debug=False, database='greengenes'):
         self.con = connect(host=host, user=user, password=passwd,
                            database=database)
-        self.cursor = self.con.cursor()
 
         if debug:
             self._set_development_schema()
@@ -117,18 +117,16 @@ class GreengenesDB(object):
             self._set_production_schema()
 
     def __del__(self):
-        self.cursor.close()
         self.con.close()
-        del self.cursor
         del self.con
 
     def _set_development_schema(self):
         """Set development schema"""
-        self._execute_safe(_sql_set_search_path % "development")
+        self._execute(_sql_set_search_path % "development")
 
     def _set_production_schema(self):
         """Set production schema"""
-        self._execute_safe(_sql_set_search_path % "production")
+        self._execute(_sql_set_search_path % "production")
 
     def to_arb(self, ids, aln_seq_field, directio_basename=None, size=10000):
         """Fetch ARB records
@@ -144,15 +142,16 @@ class GreengenesDB(object):
         else:
             out = []
 
+        cursor = self.con.cursor()
         for chunk in bin_ids:
             if directio_basename is not None:
                 out = gzopen(directio_basename + '_%d.txt.gz' % file_count,
                              'w')
 
             joined_ids = ','.join(map(str, chunk))
-            self.cursor.execute(FULL_RECORD_DUMP % (aln_seq_field, joined_ids))
+            cursor.execute(FULL_RECORD_DUMP % (aln_seq_field, joined_ids))
 
-            for rec in self.cursor.fetchall():
+            for rec in cursor.fetchall():
                 rec_lines = []
                 rec_lines.append("BEGIN\n")
                 for o, x in zip(FULL_RECORD_ORDER, rec):
@@ -174,6 +173,7 @@ class GreengenesDB(object):
                 out.close()
                 file_count += 1
 
+        cursor.close()
         if directio_basename is None:
             return out
         else:
@@ -194,18 +194,18 @@ class GreengenesDB(object):
             gg_id = int(gg_id)
 
             if tax is None:
-                self._execute_safe(_sql_update_rec % (col, "NULL", gg_id))
+                self._execute(_sql_update_rec % (col, "NULL", gg_id))
             else:
-                self._execute_safe(_sql_insert_tax % (tax_id, version, tax))
-                self._execute_safe(_sql_update_rec % (col, tax_id, gg_id))
+                self._execute(_sql_insert_tax % (tax_id, version, tax))
+                self._execute(_sql_update_rec % (col, tax_id, gg_id))
                 tax_id += 1
 
         self.con.commit()
 
     def get_release(self, name):
         """Return the GG IDs associated with a release name"""
-        self._execute_safe(_sql_select_relids % name)
-        return [i[0] for i in self.cursor.fetchall()]
+        with self._execute_and_more(_sql_select_relids % name) as cur:
+            return [i[0] for i in cur.fetchall()]
 
     def get_ncbi_tax_multiple(self, ggids):
         """Query multiple GGIDs at a time"""
@@ -219,16 +219,14 @@ class GreengenesDB(object):
         """Get multiple taxonomy strings by GGIDs"""
         res = {int(i): None for i in ggids}
         ggids = ",".join(map(str, ggids))
-        try:
-            self.cursor.execute("""
-                SELECT g.gg_id, t.tax_string
-                FROM record g INNER JOIN
-                     taxonomy t ON g.%s=t.tax_id
-                WHERE g.gg_id in (%s)""" % (field, ggids))
-        except ProgrammingError:
-            raise ValueError("Failed query!")
+        sql = """SELECT g.gg_id, t.tax_string
+                 FROM record g INNER JOIN
+                      taxonomy t ON g.%s=t.tax_id
+                 WHERE g.gg_id in (%s)""" % (field, ggids)
 
-        res.update(dict(self.cursor.fetchall()))
+        with self._execute_and_more(sql) as cur:
+            res.update(dict(cur.fetchall()))
+
         return res
 
     def get_ncbi_tax(self, ggid):
@@ -241,16 +239,14 @@ class GreengenesDB(object):
 
     def _get_single_tax(self, field, ggid):
         """Get a single taxonomy string by ggid"""
-        try:
-            self.cursor.execute("""
-                SELECT t.tax_string
-                FROM record g INNER JOIN
-                     taxonomy t ON g.%s=t.tax_id
-                WHERE g.gg_id=%d""" % (field, int(ggid)))
-        except ProgrammingError:
-            raise ValueError("Failed query!")
+        sql = """SELECT t.tax_string
+                 FROM record g INNER JOIN
+                      taxonomy t ON g.%s=t.tax_id
+                 WHERE g.gg_id=%d""" % (field, int(ggid))
 
-        res = self.cursor.fetchone()
+        with self._execute_and_more(sql) as cur:
+            res = cur.fetchone()
+
         if res is None:
             return None
         else:
@@ -273,19 +269,16 @@ class GreengenesDB(object):
 
         Returns None if not found or GG_ID doesn't exist
         """
-        try:
-            n = self.cursor.execute("""SELECT s.sequence
-                                       FROM record g INNER JOIN
-                                            sequence s ON g.%s=s.seq_id
-                                       WHERE g.gg_id=%d""" %
-                                    (field, int(gg_id)))
-        except ProgrammingError:
-            return None
+        sql = """SELECT s.sequence
+                 FROM record g INNER JOIN
+                      sequence s ON g.%s=s.seq_id
+                 WHERE g.gg_id=%d""" % (field, int(gg_id))
 
-        if n == 0:
-            return None
-        else:
-            return self.cursor.fetchone()[0]
+        with self._execute_and_more(sql) as cur:
+            if cur.rowcount == 0:
+                return None
+            else:
+                return cur.fetchone()[0]
 
     def _update_seq(self, seqs, col):
         """update greengenes record"""
@@ -293,8 +286,8 @@ class GreengenesDB(object):
         for gg_id, seq in seqs.items():
             gg_id = int(gg_id)
 
-            self._execute_safe(_sql_insert_seq % (seq_id, seq))
-            self._execute_safe(_sql_update_rec % (col, seq_id, gg_id))
+            self._execute(_sql_insert_seq % (seq_id, seq))
+            self._execute(_sql_update_rec % (col, seq_id, gg_id))
             seq_id += 1
 
         self.con.commit()
@@ -313,53 +306,34 @@ class GreengenesDB(object):
 
     def _get_max_otu_cluster_id(self):
         """Returns the max observed OTU cluster ID"""
-        query = "SELECT MAX(cluster_id) FROM otu_cluster"
-
-        try:
-            self.cursor.execute(query)
-        except:
-            raise ValueError("Unable to query")
-
-        id_ = self.cursor.fetchone()[0]
-        return id_ if id_ is not None else 0
+        sql = "SELECT MAX(cluster_id) FROM otu_cluster"
+        with self._execute_and_more(sql) as cur:
+            id_ = cur.fetchone()[0]
+            return id_ if id_ is not None else 0
 
     def _get_max_ggid(self):
         """Returns the max observed gg id"""
-        query = "SELECT MAX(gg_id) FROM record"
-
-        try:
-            self.cursor.execute(query)
-        except:
-            raise ValueError("Unable to query")
-
-        return self.cursor.fetchone()[0]
+        sql = "SELECT MAX(gg_id) FROM record"
+        with self._execute_and_more(sql) as cur:
+            return cur.fetchone()[0]
 
     def _get_max_taxid(self):
         """Returns the max observed taxonomy id"""
-        query = "SELECT MAX(tax_id) FROM taxonomy"
-
-        try:
-            self.cursor.execute(query)
-        except:
-            raise ValueError("Unable to query")
-
-        return self.cursor.fetchone()[0]
+        sql = "SELECT MAX(tax_id) FROM taxonomy"
+        with self._execute_and_more(sql) as cur:
+            return cur.fetchone()[0]
 
     def _get_max_seqid(self):
         """Returns the max observed sequence id"""
-        query = "SELECT MAX(seq_id) FROM sequence"
-
-        try:
-            self.cursor.execute(query)
-        except:
-            raise ValueError("Unable to query")
-
-        return self.cursor.fetchone()[0]
+        sql = "SELECT MAX(seq_id) FROM sequence"
+        with self._execute_and_more(sql) as cur:
+            return cur.fetchone()[0]
 
     def __contains__(self, item):
         ncbi = """select ncbi_acc_w_ver
                   from record
                   where ncbi_acc_w_ver='%s'""" % str(item)
+
         try:
             item = int(item)
             ggid = "select gg_id from record where gg_id=%d" % item
@@ -367,29 +341,37 @@ class GreengenesDB(object):
             ggid = None
 
         if ggid is not None:
-            self.cursor.execute(ggid)
-            ggid_cnt = self.cursor.rowcount
+            with self._execute_and_more(ggid) as cur:
+                ggid_cnt = cur.rowcount
         else:
             ggid_cnt = 0
 
-        self.cursor.execute(ncbi)
-        ncbi_cnt = self.cursor.rowcount
+        with self._execute_and_more(ncbi) as cur:
+            ncbi_cnt = cur.rowcount
 
         if ggid_cnt != 0 or ncbi_cnt != 0:
             return True
         else:
             return False
 
-    def _execute_safe(self, sql):
-        """Execute and roll back if we hit an error"""
-        try:
-            self.cursor.execute(sql)
-        except ProgrammingError:
-            self.con.rollback()
-            raise ValueError("Unable to execute:\n%s!" % sql)
-        except OperationalError:
-            self.con.rollback()
-            raise ValueError("Bad value in:\n%s!" % sql)
+    @contextmanager
+    def _execute_and_more(self, sql):
+        """Execute, rollback if we hit an error, otherwise get a cursor"""
+        with self.con.cursor() as cursor:
+            try:
+                _ = cursor.execute(sql)
+            except ProgrammingError:
+                self.con.rollback()
+                raise ValueError("Unable to execute:\n%s!" % sql)
+            except OperationalError:
+                self.con.rollback()
+                raise ValueError("Bad value in:\n%s!" % sql)
+            yield cursor
+
+    def _execute(self, sql):
+        """Execute and rollback if we hit an error"""
+        with self._execute_and_more(sql):
+            pass
 
     @staticmethod
     def _build_rec(dbrec):
@@ -401,24 +383,23 @@ class GreengenesDB(object):
         if id_ not in self:
             raise ValueError("%d doesn't appear in the db!" % id_)
 
-        self._execute_safe(SINGLE_RECORD % (id_, id_))
-        return self._build_rec(self.cursor.fetchone())
+        with self._execute_and_more(SINGLE_RECORD % (id_, id_)) as cur:
+            return self._build_rec(cur.fetchone())
 
     def insert_sequence(self, seq):
         """Load a sequence, return seq_id"""
         seq_id = self._get_max_seqid() + 1
 
-        self._execute_safe(_sql_insert_seq % (seq_id, seq))
+        self._execute(_sql_insert_seq % (seq_id, seq))
 
         self.con.commit()
         return seq_id
 
     def insert_taxonomy(self, tax, tax_version):
         """Load a taxonomy string, return tax_id"""
-
         tax_id = self._get_max_taxid() + 1
 
-        self._execute_safe(_sql_insert_tax % (tax_id, tax_version, tax))
+        self._execute(_sql_insert_tax % (tax_id, tax_version, tax))
 
         self.con.commit()
         return tax_id
@@ -444,8 +425,8 @@ class GreengenesDB(object):
             vals.append(val)
         vals = ','.join(vals)
 
-        self._execute_safe(_sql_insert_rec % (colnames, vals))
-        self._execute_safe(_sql_insert_rel % (ggid, releasename))
+        self._execute(_sql_insert_rec % (colnames, vals))
+        self._execute(_sql_insert_rel % (ggid, releasename))
 
         self.con.commit()
 
@@ -463,8 +444,9 @@ class GreengenesDB(object):
         if rep_id not in members:
             members.append(rep_id)
 
-        self._execute_safe(_sql_select_relid % (rep_id, rel_name))
-        rel_id = self.cursor.fetchone()[0]
+        sql = _sql_select_relid % (rep_id, rel_name)
+        with self._execute_and_more(sql) as cur:
+            rel_id = cur.fetchone()[0]
 
         if rel_id is None:
             raise ValueError("%d doesn't appear to be in %s" %
@@ -474,32 +456,34 @@ class GreengenesDB(object):
 
         sql = _sql_insert_otu_cluster % (c_id, rep_id, rel_id, similarity,
                                          method)
-        self._execute_safe(sql)
+        self._execute(sql)
 
         for member in members:
-            self._execute_safe(_sql_insert_otu % (c_id, member))
+            self._execute(_sql_insert_otu % (c_id, member))
 
         self.con.commit()
 
     def _create_db(self, schema='development'):
         """Create a small test database"""
-        self.cursor.execute("DROP TABLE IF EXISTS %s.otu" % schema)
-        self.cursor.execute("DROP TABLE IF EXISTS %s.otu_cluster" % schema)
-        self.cursor.execute("DROP TABLE IF EXISTS %s.gg_release" % schema)
-        self.cursor.execute("DROP TABLE IF EXISTS %s.chimera" % schema)
-        self.cursor.execute("DROP TABLE IF EXISTS %s.record" % schema)
-        self.cursor.execute("DROP TABLE IF EXISTS %s.taxonomy" % schema)
-        self.cursor.execute("DROP TABLE IF EXISTS %s.sequence" % schema)
+        cursor = self.con.cursor()
+        cursor.execute("DROP TABLE IF EXISTS %s.otu" % schema)
+        cursor.execute("DROP TABLE IF EXISTS %s.otu_cluster" % schema)
+        cursor.execute("DROP TABLE IF EXISTS %s.gg_release" % schema)
+        cursor.execute("DROP TABLE IF EXISTS %s.chimera" % schema)
+        cursor.execute("DROP TABLE IF EXISTS %s.record" % schema)
+        cursor.execute("DROP TABLE IF EXISTS %s.taxonomy" % schema)
+        cursor.execute("DROP TABLE IF EXISTS %s.sequence" % schema)
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE TABLE %s.taxonomy(
             tax_id INT NOT NULL,
             tax_version VARCHAR(16) NOT NULL,
             tax_string VARCHAR(500) NOT NULL,
             PRIMARY KEY(tax_id)
             )""" % schema)
+        self.con.commit()
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE TABLE %s.sequence(
             seq_id INT NOT NULL,
             sequence VARCHAR(20000),
@@ -507,7 +491,7 @@ class GreengenesDB(object):
             )""" % schema)
         self.con.commit()
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE TABLE %s.record (
                 gg_id INT NOT NULL,
                 ncbi_acc_w_ver VARCHAR(20) NOT NULL,
@@ -549,7 +533,7 @@ class GreengenesDB(object):
             )""" % schema)
         self.con.commit()
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE TABLE %s.gg_release(
             rel_id SERIAL NOT NULL,
             name VARCHAR(20) NOT NULL,
@@ -559,7 +543,7 @@ class GreengenesDB(object):
             )""" % schema)
         self.con.commit()
 
-        self.cursor.execute("""CREATE TABLE %s.otu_cluster (
+        cursor.execute("""CREATE TABLE %s.otu_cluster (
             cluster_id INT NOT NULL,
             rep_id INT NOT NULL,
             rel_id INT NOT NULL,
@@ -571,7 +555,7 @@ class GreengenesDB(object):
             )""" % schema)
         self.con.commit()
 
-        self.cursor.execute("""CREATE TABLE %s.otu (
+        cursor.execute("""CREATE TABLE %s.otu (
             otu_id SERIAL NOT NULL,
             cluster_id INT NOT NULL,
             gg_id INT NOT NULL,
@@ -581,7 +565,7 @@ class GreengenesDB(object):
             )""" % schema)
         self.con.commit()
 
-        self.cursor.execute("""
+        cursor.execute("""
             CREATE TABLE %s.chimera(
             chim_id SERIAL NOT NULL,
             gg_id INT NOT NULL,
@@ -593,83 +577,84 @@ class GreengenesDB(object):
 
     def _populate_debug_db(self):
         """Source a subset from production db"""
-        self.cursor.execute("""INSERT INTO development.sequence
-                               SELECT s.seq_id,s.sequence
-                               FROM production.record g
-                                INNER JOIN production.sequence s
-                                ON g.pynast_aligned_seq_id=s.seq_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.sequence
-                               SELECT s.seq_id,s.sequence
-                               FROM production.record g
-                                INNER JOIN production.sequence s
-                                ON g.unaligned_seq_id=s.seq_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.sequence
-                               SELECT s.seq_id,s.sequence
-                               FROM production.record g
-                                INNER JOIN production.sequence s
-                                ON g.aligned_seq_id=s.seq_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.taxonomy
-                               SELECT t.tax_id, t.tax_version, t.tax_string
-                               FROM production.record g
-                                INNER JOIN production.taxonomy t
-                                ON g.ncbi_tax_id=t.tax_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.taxonomy
-                               SELECT t.tax_id, t.tax_version, t.tax_string
-                               FROM production.record g
-                                INNER JOIN production.taxonomy t
-                                ON g.hugenholtz_tax_id=t.tax_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.taxonomy
-                               SELECT t.tax_id, t.tax_version, t.tax_string
-                               FROM production.record g
-                                INNER JOIN production.taxonomy t
-                                ON g.greengenes_tax_id=t.tax_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.taxonomy
-                               SELECT t.tax_id, t.tax_version, t.tax_string
-                               FROM production.record g
-                                INNER JOIN production.taxonomy t
-                                ON g.silva_tax_id=t.tax_id
-                               WHERE g.gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.record
-                               SELECT   GG_ID,
-                                        NCBI_ACC_W_VER,
-                                        NCBI_GI,
-                                        DB_NAME ,
-                                        GOLD_ID,
-                                        DECISION,
-                                        PROKMSANAME,
-                                        ISOLATION_SOURCE,
-                                        CLONE,
-                                        ORGANISM,
-                                        STRAIN,
-                                        SPECIFIC_HOST,
-                                        AUTHORS,
-                                        TITLE,
-                                        JOURNAL,
-                                        PUBMED,
-                                        SUBMIT_DATE,
-                                        COUNTRY,
-                                        NCBI_TAX_ID,
-                                        SILVA_TAX_ID,
-                                        GREENGENES_TAX_ID,
-                                        HUGENHOLTZ_TAX_ID,
-                                        NON_ACGT_PERCENT,
-                                        PERC_IDENT_TO_INVARIANT_CORE,
-                                        UNALIGNED_SEQ_ID,
-                                        ALIGNED_SEQ_ID,
-                                        pynast_aligned_seq_id,
-                                        max_non_acgt_streak
-                               FROM production.record
-                               WHERE gg_id < 100""")
-        self.cursor.execute("""INSERT INTO development.gg_release
-                               SELECT r.rel_id, r.name, r.gg_id
-                               FROM production.record g
-                                INNER JOIN production.gg_release r
-                                ON g.gg_id=r.gg_id
-                               WHERE g.gg_id < 100""")
+        cursor = self.con.cursor()
+        cursor.execute("""INSERT INTO development.sequence
+                          SELECT s.seq_id,s.sequence
+                          FROM production.record g
+                           INNER JOIN production.sequence s
+                           ON g.pynast_aligned_seq_id=s.seq_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.sequence
+                          SELECT s.seq_id,s.sequence
+                          FROM production.record g
+                           INNER JOIN production.sequence s
+                           ON g.unaligned_seq_id=s.seq_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.sequence
+                          SELECT s.seq_id,s.sequence
+                          FROM production.record g
+                           INNER JOIN production.sequence s
+                           ON g.aligned_seq_id=s.seq_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.taxonomy
+                          SELECT t.tax_id, t.tax_version, t.tax_string
+                          FROM production.record g
+                           INNER JOIN production.taxonomy t
+                           ON g.ncbi_tax_id=t.tax_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.taxonomy
+                          SELECT t.tax_id, t.tax_version, t.tax_string
+                          FROM production.record g
+                           INNER JOIN production.taxonomy t
+                           ON g.hugenholtz_tax_id=t.tax_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.taxonomy
+                          SELECT t.tax_id, t.tax_version, t.tax_string
+                          FROM production.record g
+                           INNER JOIN production.taxonomy t
+                           ON g.greengenes_tax_id=t.tax_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.taxonomy
+                          SELECT t.tax_id, t.tax_version, t.tax_string
+                          FROM production.record g
+                           INNER JOIN production.taxonomy t
+                           ON g.silva_tax_id=t.tax_id
+                          WHERE g.gg_id < 100""")
+        cursor.execute("""INSERT INTO development.record
+                          SELECT   GG_ID,
+                                   NCBI_ACC_W_VER,
+                                   NCBI_GI,
+                                   DB_NAME ,
+                                   GOLD_ID,
+                                   DECISION,
+                                   PROKMSANAME,
+                                   ISOLATION_SOURCE,
+                                   CLONE,
+                                   ORGANISM,
+                                   STRAIN,
+                                   SPECIFIC_HOST,
+                                   AUTHORS,
+                                   TITLE,
+                                   JOURNAL,
+                                   PUBMED,
+                                   SUBMIT_DATE,
+                                   COUNTRY,
+                                   NCBI_TAX_ID,
+                                   SILVA_TAX_ID,
+                                   GREENGENES_TAX_ID,
+                                   HUGENHOLTZ_TAX_ID,
+                                   NON_ACGT_PERCENT,
+                                   PERC_IDENT_TO_INVARIANT_CORE,
+                                   UNALIGNED_SEQ_ID,
+                                   ALIGNED_SEQ_ID,
+                                   pynast_aligned_seq_id,
+                                   max_non_acgt_streak
+                          FROM production.record
+                          WHERE gg_id < 100""")
+        cursor.execute("""INSERT INTO development.gg_release
+                          SELECT r.rel_id, r.name, r.gg_id
+                          FROM production.record g
+                           INNER JOIN production.gg_release r
+                           ON g.gg_id=r.gg_id
+                          WHERE g.gg_id < 100""")
         self.con.commit()
