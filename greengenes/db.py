@@ -102,6 +102,21 @@ _sql_select_relid = """SELECT rel_id
                        WHERE gg_id=%d AND name='%s'"""
 _sql_set_search_path = "SET search_path TO %s"
 
+_sql_record_exists_ncbi =  """SELECT ncbi_acc_w_ver
+                              FROM record
+                              WHERE ncbi_acc_w_ver='%s'"""
+_sql_record_exists_ggid = "SELECT gg_id FROM record WHERE gg_id=%d"
+
+_sql_select_multiple_tax = """SELECT g.gg_id, t.tax_string
+                              FROM record g INNER JOIN
+                                   taxonomy t ON g.%s=t.tax_id
+                              WHERE g.gg_id in (%s)"""
+
+_sql_select_single_tax = """SELECT t.tax_string
+                            FROM record g INNER JOIN
+                                 taxonomy t ON g.%s=t.tax_id
+                            WHERE g.gg_id=%d"""
+_sql_select_max = "SELECT MAX(%s) FROM %s"
 
 class GreengenesDB(object):
     def __init__(self, host='localhost', user='ggadmin', passwd='',
@@ -219,10 +234,7 @@ class GreengenesDB(object):
         """Get multiple taxonomy strings by GGIDs"""
         res = {int(i): None for i in ggids}
         ggids = ",".join(map(str, ggids))
-        sql = """SELECT g.gg_id, t.tax_string
-                 FROM record g INNER JOIN
-                      taxonomy t ON g.%s=t.tax_id
-                 WHERE g.gg_id in (%s)""" % (field, ggids)
+        sql = _sql_select_multiple_tax % (field, ggids)
 
         with self._execute_and_more(sql) as cur:
             res.update(dict(cur.fetchall()))
@@ -239,10 +251,7 @@ class GreengenesDB(object):
 
     def _get_single_tax(self, field, ggid):
         """Get a single taxonomy string by ggid"""
-        sql = """SELECT t.tax_string
-                 FROM record g INNER JOIN
-                      taxonomy t ON g.%s=t.tax_id
-                 WHERE g.gg_id=%d""" % (field, int(ggid))
+        sql = _sql_select_single_tax % (field, int(ggid))
 
         with self._execute_and_more(sql) as cur:
             res = cur.fetchone()
@@ -306,37 +315,35 @@ class GreengenesDB(object):
 
     def _get_max_otu_cluster_id(self):
         """Returns the max observed OTU cluster ID"""
-        sql = "SELECT MAX(cluster_id) FROM otu_cluster"
+        sql = _sql_select_max % ("cluster_id", "otu_cluster")
         with self._execute_and_more(sql) as cur:
             id_ = cur.fetchone()[0]
             return id_ if id_ is not None else 0
 
     def _get_max_ggid(self):
         """Returns the max observed gg id"""
-        sql = "SELECT MAX(gg_id) FROM record"
+        sql = _sql_select_max % ("gg_id", "record")
         with self._execute_and_more(sql) as cur:
             return cur.fetchone()[0]
 
     def _get_max_taxid(self):
         """Returns the max observed taxonomy id"""
-        sql = "SELECT MAX(tax_id) FROM taxonomy"
+        sql = _sql_select_max % ("tax_id", "taxonomy")
         with self._execute_and_more(sql) as cur:
             return cur.fetchone()[0]
 
     def _get_max_seqid(self):
         """Returns the max observed sequence id"""
-        sql = "SELECT MAX(seq_id) FROM sequence"
+        sql = _sql_select_max % ("seq_id", "sequence")
         with self._execute_and_more(sql) as cur:
             return cur.fetchone()[0]
 
     def __contains__(self, item):
-        ncbi = """select ncbi_acc_w_ver
-                  from record
-                  where ncbi_acc_w_ver='%s'""" % str(item)
+        ncbi = _sql_record_exists_ncbi % str(item)
 
         try:
             item = int(item)
-            ggid = "select gg_id from record where gg_id=%d" % item
+            ggid = _sql_record_exists_ggid % item
         except ValueError:
             ggid = None
 
