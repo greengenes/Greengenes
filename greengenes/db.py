@@ -38,8 +38,8 @@ SINGLE_RECORD = "SELECT gg_id,ncbi_acc_w_ver,ncbi_gi,db_name,gold_id,"\
                 "gg.tax_string AS greengenes_tax_string,"\
                 "h.tax_string AS hugenholtz_tax_id,non_acgt_percent,"\
                 "perc_ident_to_invariant_core,ssu.sequence AS ssualign_seq,"\
-                "pynast.sequence AS pynast_seq,"\
-                "unaligned.sequence AS unaligned_seq "\
+                "pn.sequence AS pynast_seq,"\
+                "ua.sequence AS unaligned_seq "\
                 "FROM record g "\
                 "LEFT JOIN taxonomy st ON st.tax_id=g.silva_tax_id "\
                 "LEFT JOIN taxonomy nt ON nt.tax_id=g.ncbi_tax_id "\
